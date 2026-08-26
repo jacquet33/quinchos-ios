@@ -156,6 +156,9 @@ actor APIService {
         amenidades: [String]? = nil,
         ordenarPor: String? = nil,
         ciudad: String? = nil,
+        lat: Double? = nil,
+        lng: Double? = nil,
+        radio: Double? = nil,
         page: Int = 1
     ) async throws -> QuinchosResponse {
         var params: [String] = ["page=\(page)"]
@@ -166,8 +169,15 @@ actor APIService {
         if let a = amenidades, !a.isEmpty { params.append("amenidades=\(a.joined(separator: ","))") }
         if let o = ordenarPor { params.append("ordenarPor=\(o)") }
         if let ci = ciudad { params.append("ciudad=\(ci.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ci)") }
+        if let la = lat { params.append("lat=\(la)") }
+        if let ln = lng { params.append("lng=\(ln)") }
+        if let r = radio { params.append("radio=\(r)") }
         let qs = params.isEmpty ? "" : "?\(params.joined(separator: "&"))"
         return try await request(method: "GET", path: "/quinchos\(qs)")
+    }
+
+    func quinchosParaMapa(lat: Double, lng: Double, radio: Double = 50) async throws -> QuinchosMapaResponse {
+        try await request(method: "GET", path: "/quinchos/mapa?lat=\(lat)&lng=\(lng)&radio=\(radio)")
     }
 
     func destacados() async throws -> QuinchosResponse {
