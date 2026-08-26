@@ -1,0 +1,38 @@
+name: QuinchosApp
+options:
+  bundleIdPrefix: com.quinchos
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: 1
+    INFOPLIST_KEY_CFBundleDisplayName: "QuinchosApp"
+    INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.lifestyle"
+
+targets:
+  QuinchosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - QuinchosApp
+    settings:
+      base:
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Necesitamos tu ubicación para mostrarte quinchos cercanos"
+        INFOPLIST_KEY_NSCameraUsageDescription: "Permite tomar fotos para tus reseñas"
+
+packages:
+  Kingfisher:
+    url: https://github.com/onevcat/Kingfisher.git
+    from: "7.0.0"

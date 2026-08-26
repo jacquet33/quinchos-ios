@@ -1,0 +1,10 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+/* This is a placeholder. Open the project in Xcode and let it regenerate, or use `xcodegen` with the project.yml below. */
+	};
+	rootObject = "ROOT";
+}

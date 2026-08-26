@@ -1,0 +1,10 @@
+.DS_Store
+*.xcuserdata/
+*.xcworkspace/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+.build/
