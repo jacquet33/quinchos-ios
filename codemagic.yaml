@@ -9,6 +9,8 @@ workflows:
       vars:
         BUNDLE_ID: "com.quinchos.app"
         TEAM_ID: "L2V2C22VFC"
+      groups:
+        - a
     
     integrations:
       app_store_connect: IT rispy
