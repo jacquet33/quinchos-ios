@@ -6,14 +6,9 @@ workflows:
     
     environment:
       xcode: latest
-      cocoapods: default
       vars:
         BUNDLE_ID: "com.quinchos.app"
         TEAM_ID: "L2V2C22VFC"
-        APP_STORE_CONNECT_ISSUER_ID: ""
-        APP_STORE_CONNECT_KEY_IDENTIFIER: ""
-      groups:
-        - appstore_credentials
     
     integrations:
       app_store_connect: Codemagic
@@ -28,10 +23,9 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: Set up Xcode project
+      - name: Generate Xcode project
         script: |
           cd $CM_BUILD_DIR
-          # Generate project if using xcodegen
           if [ -f "project.yml" ]; then
             brew install xcodegen
             xcodegen generate
@@ -43,20 +37,16 @@ workflows:
           xcode-project build-ipa \
             --project "QuinchosApp.xcodeproj" \
             --scheme "QuinchosApp" \
-            --config "Release" \
-            --archive-flags="-destination 'generic/platform=iOS'"
+            --config "Release"
     
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - jpv
       
       email:
         recipients:
