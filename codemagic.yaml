@@ -10,7 +10,8 @@ workflows:
         BUNDLE_ID: "com.quinchos.app"
         TEAM_ID: "L2V2C22VFC"
       groups:
-        - appstore_credentials
+        - QUINCHAPP
+        - a
     
     scripts:
       - name: Set up code signing
