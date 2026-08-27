@@ -9,9 +9,8 @@ workflows:
       vars:
         BUNDLE_ID: "com.quinchos.app"
         TEAM_ID: "L2V2C22VFC"
-    
-    integrations:
-      app_store_connect: Codemagic
+      groups:
+        - appstore_credentials
     
     scripts:
       - name: Set up code signing
