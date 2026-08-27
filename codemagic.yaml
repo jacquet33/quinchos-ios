@@ -9,9 +9,9 @@ workflows:
       vars:
         BUNDLE_ID: "com.quinchos.app"
         TEAM_ID: "L2V2C22VFC"
-      groups:
-        - QUINCHAPP
-        - a
+    
+    integrations:
+      app_store_connect: IT rispy
     
     scripts:
       - name: Set up code signing
@@ -45,7 +45,7 @@ workflows:
     
     publishing:
       app_store_connect:
-        auth: api_key
+        auth: integration
         submit_to_testflight: true
       
       email:
