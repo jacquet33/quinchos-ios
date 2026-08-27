@@ -1,0 +1,66 @@
+workflows:
+  quinchos-ios:
+    name: QuinchosApp iOS
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    
+    environment:
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "com.quinchos.app"
+        TEAM_ID: "L2V2C22VFC"
+        APP_STORE_CONNECT_ISSUER_ID: ""
+        APP_STORE_CONNECT_KEY_IDENTIFIER: ""
+      groups:
+        - appstore_credentials
+    
+    integrations:
+      app_store_connect: Codemagic
+    
+    scripts:
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Set up Xcode project
+        script: |
+          cd $CM_BUILD_DIR
+          # Generate project if using xcodegen
+          if [ -f "project.yml" ]; then
+            brew install xcodegen
+            xcodegen generate
+          fi
+
+      - name: Build
+        script: |
+          cd $CM_BUILD_DIR
+          xcode-project build-ipa \
+            --project "QuinchosApp.xcodeproj" \
+            --scheme "QuinchosApp" \
+            --config "Release" \
+            --archive-flags="-destination 'generic/platform=iOS'"
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - jpv
+      
+      email:
+        recipients:
+          - alejandrojacquet@gmail.com
+        notify:
+          success: true
+          failure: true
