@@ -42,8 +42,7 @@ workflows:
           cd $CM_BUILD_DIR
           xcode-project build-ipa \
             --project "QuinchosApp.xcodeproj" \
-            --scheme "QuinchosApp" \
-            --config "Release"
+            --scheme "QuinchosApp"
     
     artifacts:
       - build/ios/ipa/*.ipa
