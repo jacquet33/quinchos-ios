@@ -64,57 +64,6 @@ final class AuthViewModel: ObservableObject {
     }
 }
 
-// MARK: - Quinchos ViewModel
-
-@MainActor
-final class QuinchosViewModel: ObservableObject {
-    @Published var quinchos: [Quincho] = []
-    @Published var destacados: [Quincho] = []
-    @Published var quinchoDetalle: Quincho?
-    @Published var isLoading = false
-    @Published var error: String?
-
-    // Filtros
-    @Published var searchQuery = ""
-    @Published var tipoSeleccionado: String = "todos"
-
-    private let api = APIService.shared
-
-    func buscar() async {
-        isLoading = true
-        do {
-            let response = try await api.buscarQuinchos(
-                query: searchQuery.isEmpty ? nil : searchQuery,
-                tipo: tipoSeleccionado == "todos" ? nil : tipoSeleccionado
-            )
-            quinchos = response.data
-        } catch {
-            self.error = error.localizedDescription
-        }
-        isLoading = false
-    }
-
-    func cargarDestacados() async {
-        do {
-            let response = try await api.destacados()
-            destacados = response.data
-        } catch {
-            print("Error cargando destacados: \(error)")
-        }
-    }
-
-    func cargarDetalle(id: String) async {
-        isLoading = true
-        do {
-            let response = try await api.quincho(id: id)
-            quinchoDetalle = response.data
-        } catch {
-            self.error = error.localizedDescription
-        }
-        isLoading = false
-    }
-}
-
 // MARK: - Reservas ViewModel
 
 @MainActor
