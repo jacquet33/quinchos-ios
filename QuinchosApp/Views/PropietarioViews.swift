@@ -374,7 +374,7 @@ struct ReservaRecibidaRow: View {
                     Text(reserva.quincho?.nombre ?? "").font(.caption).foregroundColor(.appTextSecondary)
                 }
                 Spacer()
-                EstadoBadge(estado: EstadoReserva(rawValue: reserva.estado) ?? .PENDIENTE)            }
+                EstadoBadge(estado: reserva.estado)            }
             
             HStack(spacing: 16) {
                 Label(reserva.fecha.prefix(10).description, systemImage: "calendar").font(.caption)
