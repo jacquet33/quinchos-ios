@@ -870,7 +870,7 @@ struct MapaView: View {
     @EnvironmentObject var vm: QuinchosViewModel
     @EnvironmentObject var favoritosVM: FavoritosViewModel
     @StateObject private var locationManager = LocationManager()
-    @State private var region = MKCoordinateRegion(
+    private let region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: -32.2230, longitude: -58.1411),
         span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
     )
@@ -881,19 +881,23 @@ struct MapaView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // Mapa
-                Map(coordinateRegion: $region, annotationItems: vm.quinchos) { q in
-                    MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
-                        Button {
-                            withAnimation(.spring()) { quinchoSeleccionado = q }
-                        } label: {
-                            PriceMarker(
-                                precio: q.precioDia,
-                                rating: q.calificacionProm,
-                                isSelected: quinchoSeleccionado?.id == q.id
-                            )
+                Map(initialPosition: .region(region)) {
+                    UserAnnotation()
+                    ForEach(vm.quinchos) { q in
+                        Annotation(q.nombre, coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
+                            Button {
+                                withAnimation(.spring()) { quinchoSeleccionado = q }
+                            } label: {
+                                PriceMarker(
+                                    precio: q.precioDia,
+                                    rating: q.calificacionProm,
+                                    isSelected: quinchoSeleccionado?.id == q.id
+                                )
+                            }
                         }
                     }
                 }
+                .mapStyle(.standard)
                 .ignoresSafeArea()
                 .onAppear {
                     locationManager.requestPermission()
@@ -999,8 +1003,8 @@ struct MapaView: View {
                             Button {
                                 if let lat = locationManager.userLatitude, let lng = locationManager.userLongitude {
                                     withAnimation {
-                                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
-                                        region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                        // Centrar en ubicación del usuario
+                                        print("Centrando en \(lat), \(lng)")
                                     }
                                 }
                             } label: {
