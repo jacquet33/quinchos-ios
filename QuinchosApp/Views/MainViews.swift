@@ -231,7 +231,7 @@ struct ExplorarView: View {
                         // Radio selector (solo si tiene GPS)
                         if locationManager.hasLocation {
                             RadioSelector(radioKm: $vm.radioKm)
-                                .onChange(of: vm.radioKm) { _ in
+                                .onChange(of: vm.radioKm) { newValue in
                                     Task { await buscarConFiltros() }
                                 }
                         }
