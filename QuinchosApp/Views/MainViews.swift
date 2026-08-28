@@ -875,7 +875,6 @@ struct MapaView: View {
         span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
     ))
     @State private var quinchoSeleccionado: Quincho?
-    @State private var showDetalle = false
 
     var body: some View {
         NavigationStack {
@@ -900,9 +899,6 @@ struct MapaView: View {
                 .ignoresSafeArea()
                 .onAppear {
                     locationManager.requestPermission()
-                    if let lat = locationManager.userLatitude, let lng = locationManager.userLongitude {
-                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
-                    }
                 }
 
                 // Tarjeta del quincho seleccionado (estilo Booking)

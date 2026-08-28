@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Banner para pedir GPS
 
