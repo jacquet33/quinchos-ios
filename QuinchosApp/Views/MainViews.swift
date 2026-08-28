@@ -135,6 +135,12 @@ struct LoginView: View {
 // MARK: - Main Tab View
 
 struct MainTabView: View {
+    @EnvironmentObject var authVM: AuthViewModel
+    
+    var esPropietario: Bool {
+        authVM.usuario?.rol == .PROPIETARIO || authVM.usuario?.rol == .ADMIN
+    }
+    
     var body: some View {
         TabView {
             ExplorarView()
@@ -146,8 +152,13 @@ struct MainTabView: View {
             ReservasView()
                 .tabItem { Label("Reservas", systemImage: "calendar") }
 
-            FavoritosView()
-                .tabItem { Label("Favoritos", systemImage: "heart") }
+            if esPropietario {
+                PropietarioView()
+                    .tabItem { Label("Mi Panel", systemImage: "briefcase") }
+            } else {
+                FavoritosView()
+                    .tabItem { Label("Favoritos", systemImage: "heart") }
+            }
 
             CuentaView()
                 .tabItem { Label("Cuenta", systemImage: "person") }
