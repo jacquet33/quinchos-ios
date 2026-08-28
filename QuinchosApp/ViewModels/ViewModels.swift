@@ -86,7 +86,7 @@ final class ReservasViewModel: ObservableObject {
         isLoading = false
     }
 
-    func crearReserva(quinchoId: String, fecha: String, horaInicio: String, horaFin: String, personas: Int, notas: String?) async -> Bool {
+    func crearReserva(quinchoId: String, fecha: String, horaInicio: String, horaFin: String, personas: Int, notas: String?, servicios: [String] = []) async -> Bool {
         isLoading = true
         error = nil
         do {
@@ -96,7 +96,8 @@ final class ReservasViewModel: ObservableObject {
                 horaInicio: horaInicio,
                 horaFin: horaFin,
                 cantidadPersonas: personas,
-                notas: notas
+                notas: notas,
+                servicios: servicios
             )
             success = "¡Reserva enviada correctamente!"
             isLoading = false

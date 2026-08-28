@@ -296,6 +296,14 @@ struct EditarQuinchoView: View {
                     ImageUploadButton(quinchoId: quincho.id)
                     
                     // Accesos
+                    NavigationLink {
+                        EditarAmenidadesView(quinchoId: quincho.id, amenidadesActuales: quincho.amenidades?.map { $0.amenidad.rawValue } ?? [])
+                    } label: {
+                        MenuRow2(icon: "checklist", label: "Comodidades incluidas", color: .appSuccess)
+                    }
+                    NavigationLink { ServiciosExtraView(quinchoId: quincho.id) } label: {
+                        MenuRow2(icon: "plus.square.on.square", label: "Servicios extra con costo", color: .appStar)
+                    }
                     NavigationLink { AgendaView(quinchoId: quincho.id, quinchoNombre: quincho.nombre) } label: {
                         MenuRow2(icon: "calendar", label: "Agenda y Horarios", color: .appPrimary)
                     }

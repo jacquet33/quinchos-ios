@@ -200,17 +200,19 @@ actor APIService {
         horaInicio: String,
         horaFin: String,
         cantidadPersonas: Int,
-        notas: String?
+        notas: String?,
+        servicios: [String] = []
     ) async throws -> ReservaResponse {
         struct Body: Encodable {
             let quinchoId, fecha, horaInicio, horaFin: String
             let cantidadPersonas: Int
             let notas: String?
+            let servicios: [String]
         }
         return try await request(
             method: "POST",
             path: "/reservas",
-            body: Body(quinchoId: quinchoId, fecha: fecha, horaInicio: horaInicio, horaFin: horaFin, cantidadPersonas: cantidadPersonas, notas: notas),
+            body: Body(quinchoId: quinchoId, fecha: fecha, horaInicio: horaInicio, horaFin: horaFin, cantidadPersonas: cantidadPersonas, notas: notas, servicios: servicios),
             requireAuth: true
         )
     }

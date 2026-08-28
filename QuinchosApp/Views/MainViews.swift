@@ -482,6 +482,37 @@ struct QuinchoDetalleView: View {
                                 }
                             }
 
+                            // Servicios extra
+                            if let servicios = q.serviciosExtra, !servicios.isEmpty {
+                                SectionTitle("Servicios adicionales")
+                                Text("Opcionales, se suman al reservar")
+                                    .font(.caption).foregroundColor(.appTextMuted)
+                                VStack(spacing: 0) {
+                                    ForEach(servicios) { s in
+                                        HStack(spacing: 12) {
+                                            Image(systemName: s.icono ?? "star")
+                                                .foregroundColor(.appPrimary).frame(width: 22)
+                                            VStack(alignment: .leading, spacing: 1) {
+                                                Text(s.nombre).font(.subheadline).foregroundColor(.appTextPrimary)
+                                                if let d = s.descripcion, !d.isEmpty {
+                                                    Text(d).font(.caption2).foregroundColor(.appTextMuted)
+                                                }
+                                            }
+                                            Spacer()
+                                            Text(s.precio == 0 ? "Sin cargo" : "+\(s.precio.formattedPrecio)")
+                                                .font(.caption).fontWeight(.semibold)
+                                                .foregroundColor(s.precio == 0 ? .appSuccess : .appPrimary)
+                                        }
+                                        .padding(.horizontal, 14).padding(.vertical, 11)
+                                        if s.id != servicios.last?.id {
+                                            Divider().background(Color.appBorder).padding(.leading, 48)
+                                        }
+                                    }
+                                }
+                                .background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+
                             // Propietario
                             if let prop = q.propietario {
                                 SectionTitle("Propietario")
@@ -528,7 +559,7 @@ struct QuinchoDetalleView: View {
                         }
                         Spacer()
                         NavigationLink {
-                            ReservarView(quinchoId: q.id, quinchoNombre: q.nombre, precio: q.precioDia)
+                            ReservarView(quinchoId: q.id, quinchoNombre: q.nombre, precio: q.precioDia, serviciosDisponibles: q.serviciosExtra ?? [])
                         } label: {
                             Text("Reservar")
                                 .font(.headline).foregroundColor(.white)
@@ -635,6 +666,8 @@ struct ReservarView: View {
     let quinchoId: String
     let quinchoNombre: String
     let precio: Int
+    var serviciosDisponibles: [ServicioExtra] = []
+    @State private var serviciosSeleccionados: Set<String> = []
     @EnvironmentObject var reservasVM: ReservasViewModel
     @Environment(\.dismiss) var dismiss
     @State private var fechaSeleccionada = Date().addingTimeInterval(86400) // mañana
@@ -662,6 +695,12 @@ struct ReservarView: View {
         return f.string(from: horaFinDate)
     }
     
+    private var totalServicios: Int {
+        serviciosDisponibles.filter { serviciosSeleccionados.contains($0.id) }.reduce(0) { $0 + $1.precio }
+    }
+
+    private var totalFinal: Int { precio + totalServicios }
+
     private var fechaDisplay: String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "es_AR")
@@ -719,6 +758,11 @@ struct ReservarView: View {
                     }
 
                     FormField(label: "Cantidad de personas", placeholder: "25", text: $personas, keyboard: .numberPad)
+
+                    if !serviciosDisponibles.isEmpty {
+                        SelectorServiciosView(servicios: serviciosDisponibles, seleccionados: $serviciosSeleccionados)
+                    }
+
                     FormField(label: "Notas (opcional)", placeholder: "Tipo de evento...", text: $notas, multiline: true)
 
                     // Resumen
@@ -726,8 +770,12 @@ struct ReservarView: View {
                         Text("Resumen").font(.headline).foregroundColor(.appTextPrimary)
                         SummaryRow(label: "Fecha", value: fechaDisplay)
                         SummaryRow(label: "Horario", value: "\(horaInicioString) – \(horaFinString)")
+                        SummaryRow(label: "Alquiler", value: precio.formattedPrecio)
+                        if totalServicios > 0 {
+                            SummaryRow(label: "Servicios extra", value: "+\(totalServicios.formattedPrecio)")
+                        }
                         Divider().background(Color.appBorder)
-                        SummaryRow(label: "Total estimado", value: precio.formattedPrecio, highlight: true)
+                        SummaryRow(label: "Total", value: totalFinal.formattedPrecio, highlight: true)
                     }
                     .padding().background(Color.appSurface).clipShape(RoundedRectangle(cornerRadius: 12))
 
@@ -743,7 +791,8 @@ struct ReservarView: View {
                                 horaInicio: horaInicioString,
                                 horaFin: horaFinString,
                                 personas: Int(personas) ?? 1,
-                                notas: notas.isEmpty ? nil : notas
+                                notas: notas.isEmpty ? nil : notas,
+                                servicios: Array(serviciosSeleccionados)
                             )
                             if ok { showSuccess = true }
                         }

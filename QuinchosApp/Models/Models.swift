@@ -55,6 +55,7 @@ struct Quincho: Codable, Identifiable, Hashable {
     let imagenes: [QuinchoImagen]?
     let amenidades: [QuinchoAmenidadWrapper]?
     let resenas: [Resena]?
+    let serviciosExtra: [ServicioExtra]?
     
     static func == (lhs: Quincho, rhs: Quincho) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -102,43 +103,97 @@ enum TipoEspacio: String, Codable, CaseIterable {
 }
 
 enum Amenidad: String, Codable, CaseIterable {
-    case PARRILLA, PILETA, ESTACIONAMIENTO, WIFI, AIRE_ACONDICIONADO
-    case COCINA, BANO, JUEGOS_NINOS, MUSICA, VAJILLA
-    case MESAS_SILLAS, SEGURIDAD, TECHADO
+    case PARRILLA, HORNO_BARRO, COCINA, HELADERA, FREEZER, VAJILLA, MICROONDAS
+    case PILETA, PILETA_CLIMATIZADA, TECHADO, JARDIN, QUINCHO_CERRADO, DECK
+    case JUEGOS_NINOS, PELOTERO, HAMACAS, TOBOGAN, ARENERO
+    case MUSICA, PROYECTOR, METEGOL, PING_PONG, POOL, CANCHA_FUTBOL, CANCHA_TENIS
+    case WIFI, AIRE_ACONDICIONADO, CALEFACCION, ESTACIONAMIENTO, SEGURIDAD
+    case BANO, DUCHA, VESTUARIO, MESAS_SILLAS, ILUMINACION, ACCESIBLE
+    case APTO_MASCOTAS, FOGON, ASADOR_CRIOLLO
 
     var label: String {
         switch self {
         case .PARRILLA: return "Parrilla"
-        case .PILETA: return "Pileta"
-        case .ESTACIONAMIENTO: return "Estacionamiento"
-        case .WIFI: return "Wi-Fi"
-        case .AIRE_ACONDICIONADO: return "Aire Acondicionado"
+        case .HORNO_BARRO: return "Horno de barro"
+        case .ASADOR_CRIOLLO: return "Asador criollo"
+        case .FOGON: return "Fogón"
         case .COCINA: return "Cocina"
-        case .BANO: return "Baño"
-        case .JUEGOS_NINOS: return "Juegos Niños"
-        case .MUSICA: return "Música"
+        case .HELADERA: return "Heladera"
+        case .FREEZER: return "Freezer"
+        case .MICROONDAS: return "Microondas"
         case .VAJILLA: return "Vajilla"
-        case .MESAS_SILLAS: return "Mesas y Sillas"
-        case .SEGURIDAD: return "Seguridad"
+        case .PILETA: return "Pileta"
+        case .PILETA_CLIMATIZADA: return "Pileta climatizada"
         case .TECHADO: return "Techado"
+        case .QUINCHO_CERRADO: return "Quincho cerrado"
+        case .JARDIN: return "Jardín"
+        case .DECK: return "Deck"
+        case .JUEGOS_NINOS: return "Juegos para niños"
+        case .PELOTERO: return "Pelotero"
+        case .HAMACAS: return "Hamacas"
+        case .TOBOGAN: return "Tobogán"
+        case .ARENERO: return "Arenero"
+        case .MUSICA: return "Equipo de música"
+        case .PROYECTOR: return "Proyector"
+        case .METEGOL: return "Metegol"
+        case .PING_PONG: return "Ping pong"
+        case .POOL: return "Pool"
+        case .CANCHA_FUTBOL: return "Cancha de fútbol"
+        case .CANCHA_TENIS: return "Cancha de tenis"
+        case .WIFI: return "Wi-Fi"
+        case .AIRE_ACONDICIONADO: return "Aire acondicionado"
+        case .CALEFACCION: return "Calefacción"
+        case .ESTACIONAMIENTO: return "Estacionamiento"
+        case .SEGURIDAD: return "Seguridad"
+        case .ILUMINACION: return "Iluminación"
+        case .BANO: return "Baño"
+        case .DUCHA: return "Ducha"
+        case .VESTUARIO: return "Vestuario"
+        case .MESAS_SILLAS: return "Mesas y sillas"
+        case .ACCESIBLE: return "Accesible"
+        case .APTO_MASCOTAS: return "Apto mascotas"
         }
     }
 
     var icono: String {
         switch self {
-        case .PARRILLA: return "flame"
-        case .PILETA: return "drop.fill"
-        case .ESTACIONAMIENTO: return "car.fill"
-        case .WIFI: return "wifi"
-        case .AIRE_ACONDICIONADO: return "snowflake"
+        case .PARRILLA, .FOGON: return "flame"
+        case .HORNO_BARRO: return "flame.circle"
+        case .ASADOR_CRIOLLO: return "flame.fill"
         case .COCINA: return "fork.knife"
-        case .BANO: return "shower.fill"
-        case .JUEGOS_NINOS: return "figure.play"
-        case .MUSICA: return "music.note"
-        case .VAJILLA: return "wineglass.fill"
-        case .MESAS_SILLAS: return "tablecells"
-        case .SEGURIDAD: return "shield.checkered"
+        case .HELADERA: return "refrigerator"
+        case .FREEZER, .AIRE_ACONDICIONADO: return "snowflake"
+        case .MICROONDAS: return "microwave"
+        case .VAJILLA: return "wineglass"
+        case .PILETA: return "drop.fill"
+        case .PILETA_CLIMATIZADA: return "drop.circle.fill"
         case .TECHADO: return "house.fill"
+        case .QUINCHO_CERRADO: return "building.2"
+        case .JARDIN: return "leaf.fill"
+        case .DECK: return "square.split.bottomrightquarter"
+        case .JUEGOS_NINOS: return "figure.play"
+        case .PELOTERO: return "circle.grid.3x3.fill"
+        case .HAMACAS: return "figure.and.child.holdinghands"
+        case .TOBOGAN: return "arrow.down.right"
+        case .ARENERO: return "square.grid.3x3.fill"
+        case .MUSICA: return "music.note"
+        case .PROYECTOR: return "tv"
+        case .METEGOL: return "sportscourt"
+        case .PING_PONG: return "figure.table.tennis"
+        case .POOL: return "circle.circle"
+        case .CANCHA_FUTBOL: return "sportscourt.fill"
+        case .CANCHA_TENIS: return "figure.tennis"
+        case .WIFI: return "wifi"
+        case .CALEFACCION: return "heater.vertical"
+        case .ESTACIONAMIENTO: return "car.fill"
+        case .SEGURIDAD: return "shield.checkered"
+        case .ILUMINACION: return "lightbulb.fill"
+        case .BANO: return "toilet"
+        case .DUCHA: return "shower.fill"
+        case .VESTUARIO: return "door.left.hand.open"
+        case .MESAS_SILLAS: return "tablecells"
+        case .ACCESIBLE: return "figure.roll"
+        case .APTO_MASCOTAS: return "pawprint.fill"
         }
     }
 }
