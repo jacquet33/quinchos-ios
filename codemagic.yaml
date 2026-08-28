@@ -22,13 +22,12 @@ workflows:
           brew install xcodegen
           xcodegen generate
 
-      - name: Increment build number
+      - name: Set build number
         script: |
           cd $CM_BUILD_DIR
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" || echo "0")
-          NEXT=$((LATEST + 1))
-          agvtool new-version -all $NEXT
-          echo "Build number: $NEXT"
+          BUILD_NUM=$(($(date +%s) / 60))
+          echo "Build number: $BUILD_NUM"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $BUILD_NUM/g" QuinchosApp.xcodeproj/project.pbxproj
 
       - name: Fetch signing files
         script: |
@@ -48,13 +47,9 @@ workflows:
       - name: Build
         script: |
           cd $CM_BUILD_DIR
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" || echo "1")
-          NEXT=$((LATEST + 1))
-          echo "Building with version $NEXT"
           xcode-project build-ipa \
             --project "QuinchosApp.xcodeproj" \
-            --scheme "QuinchosApp" \
-            --build-arguments="CURRENT_PROJECT_VERSION=$NEXT"
+            --scheme "QuinchosApp"
     
     artifacts:
       - build/ios/ipa/*.ipa
