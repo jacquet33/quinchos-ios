@@ -9,6 +9,11 @@ struct QuinchosAppMain: App {
     @StateObject private var quinchosVM = QuinchosViewModel()
     @StateObject private var reservasVM = ReservasViewModel()
     @StateObject private var favoritosVM = FavoritosViewModel()
+    @StateObject private var pushManager = PushNotificationManager.shared
+
+    init() {
+        PushNotificationManager.shared.configure()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -19,6 +24,10 @@ struct QuinchosAppMain: App {
                     .environmentObject(reservasVM)
                     .environmentObject(favoritosVM)
                     .preferredColorScheme(.dark)
+                    .onAppear {
+                        pushManager.requestPermission()
+                        Task { await pushManager.registrarEnBackend() }
+                    }
             } else {
                 LoginView()
                     .environmentObject(authVM)
