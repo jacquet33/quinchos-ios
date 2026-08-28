@@ -9,12 +9,14 @@ struct Usuario: Codable, Identifiable {
     let telefono: String?
     let avatar: String?
     let rol: Rol
-    let verificado: Bool
+    let verificado: Bool?
     let createdAt: String?
 
-    enum Rol: String, Codable {
+    enum Rol: String, Codable, CaseIterable {
         case USUARIO, PROPIETARIO, ADMIN
     }
+    
+    var isVerificado: Bool { verificado ?? false }
 }
 
 struct AuthResponse: Codable {
