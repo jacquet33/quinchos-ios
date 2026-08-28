@@ -1,19 +1,48 @@
 import SwiftUI
 import MapKit
+import UIKit
+import UserNotifications
+
+// MARK: - App Delegate (recibe el token APNs del sistema)
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        PushNotificationManager.shared.configure()
+        return true
+    }
+
+    // El sistema entrega el token APNs acá
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Task { @MainActor in
+            PushNotificationManager.shared.didRegisterForRemoteNotifications(deviceToken: deviceToken)
+        }
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("❌ Error registrando push: \(error.localizedDescription)")
+    }
+}
 
 // MARK: - App Entry
 
 @main
 struct QuinchosAppMain: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var authVM = AuthViewModel()
     @StateObject private var quinchosVM = QuinchosViewModel()
     @StateObject private var reservasVM = ReservasViewModel()
     @StateObject private var favoritosVM = FavoritosViewModel()
     @StateObject private var pushManager = PushNotificationManager.shared
 
-    init() {
-        PushNotificationManager.shared.configure()
-    }
     var body: some Scene {
         WindowGroup {
             if authVM.isAuthenticated {
