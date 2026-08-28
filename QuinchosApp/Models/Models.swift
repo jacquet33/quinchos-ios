@@ -32,7 +32,7 @@ struct PerfilResponse: Codable {
 
 // MARK: - Quincho
 
-struct Quincho: Codable, Identifiable {
+struct Quincho: Codable, Identifiable, Hashable {
     let id: String
     let nombre: String
     let descripcion: String
@@ -55,6 +55,9 @@ struct Quincho: Codable, Identifiable {
     let imagenes: [QuinchoImagen]?
     let amenidades: [QuinchoAmenidadWrapper]?
     let resenas: [Resena]?
+    
+    static func == (lhs: Quincho, rhs: Quincho) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 struct PropietarioResumen: Codable {
