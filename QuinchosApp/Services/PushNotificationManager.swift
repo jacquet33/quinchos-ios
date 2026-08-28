@@ -1,28 +1,22 @@
 import Foundation
 import UIKit
 import UserNotifications
-import FirebaseCore
-import FirebaseMessaging
 
 @MainActor
 final class PushNotificationManager: NSObject, ObservableObject {
     static let shared = PushNotificationManager()
     
-    @Published var fcmToken: String?
+    @Published var deviceToken: String?
     @Published var permissionGranted = false
     
-    private override init() {
-        super.init()
-    }
+    private override init() { super.init() }
     
-    // ─── Configurar Firebase ───
+    // Configurar (sin Firebase)
     func configure() {
-        FirebaseApp.configure()
-        Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
     }
     
-    // ─── Pedir permiso de notificaciones ───
+    // Pedir permiso
     func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(
             options: [.alert, .badge, .sound]
@@ -36,9 +30,17 @@ final class PushNotificationManager: NSObject, ObservableObject {
         }
     }
     
-    // ─── Registrar token en el backend ───
+    // Recibir token APNs del sistema
+    func didRegisterForRemoteNotifications(deviceToken: Data) {
+        let token = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("📱 APNs Token: \(token)")
+        self.deviceToken = token
+        Task { await registrarEnBackend() }
+    }
+    
+    // Registrar en backend
     func registrarEnBackend() async {
-        guard let token = fcmToken,
+        guard let token = deviceToken,
               let authToken = await APIService.shared.getToken() else { return }
         
         guard let url = URL(string: "\(APIConfig.baseURL)/dispositivos/registrar") else { return }
@@ -50,14 +52,13 @@ final class PushNotificationManager: NSObject, ObservableObject {
             "token": token,
             "plataforma": "ios"
         ])
-        
         _ = try? await URLSession.shared.data(for: request)
-        print("📱 Token FCM registrado en backend")
+        print("📱 Token registrado en backend")
     }
     
-    // ─── Eliminar token al logout ───
+    // Eliminar al logout
     func eliminarDelBackend() async {
-        guard let token = fcmToken,
+        guard let token = deviceToken,
               let authToken = await APIService.shared.getToken() else { return }
         
         guard let url = URL(string: "\(APIConfig.baseURL)/dispositivos/eliminar") else { return }
@@ -66,45 +67,17 @@ final class PushNotificationManager: NSObject, ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token])
-        
         _ = try? await URLSession.shared.data(for: request)
     }
 }
 
-// MARK: - Firebase Messaging Delegate
-
-extension PushNotificationManager: MessagingDelegate {
-    nonisolated func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        guard let token = fcmToken else { return }
-        print("📱 FCM Token: \(token)")
-        Task { @MainActor in
-            self.fcmToken = token
-            await self.registrarEnBackend()
-        }
-    }
-}
-
-// MARK: - UNUserNotificationCenter Delegate
-
 extension PushNotificationManager: UNUserNotificationCenterDelegate {
-    // Mostrar notificación cuando la app está en primer plano
-    nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification,
-        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-    ) {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .badge, .sound])
     }
     
-    // Manejar tap en notificación
-    nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse,
-        withCompletionHandler completionHandler: @escaping () -> Void
-    ) {
-        let userInfo = response.notification.request.content.userInfo
-        print("📱 Notificación abierta: \(userInfo)")
-        // TODO: Navegar a la pantalla correspondiente según el tipo
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        print("📱 Notificación abierta: \(response.notification.request.content.userInfo)")
         completionHandler()
     }
 }

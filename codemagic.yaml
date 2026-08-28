@@ -22,11 +22,6 @@ workflows:
           brew install xcodegen
           xcodegen generate
 
-      - name: Resolve packages
-        script: |
-          cd $CM_BUILD_DIR
-          xcodebuild -resolvePackageDependencies -project QuinchosApp.xcodeproj -scheme QuinchosApp
-
       - name: Set build number
         script: |
           cd $CM_BUILD_DIR

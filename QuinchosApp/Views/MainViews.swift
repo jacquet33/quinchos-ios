@@ -14,7 +14,6 @@ struct QuinchosAppMain: App {
     init() {
         PushNotificationManager.shared.configure()
     }
-
     var body: some Scene {
         WindowGroup {
             if authVM.isAuthenticated {
