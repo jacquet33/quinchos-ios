@@ -870,10 +870,10 @@ struct MapaView: View {
     @EnvironmentObject var vm: QuinchosViewModel
     @EnvironmentObject var favoritosVM: FavoritosViewModel
     @StateObject private var locationManager = LocationManager()
-    private let region = MKCoordinateRegion(
+    @State private var cameraPosition: MapCameraPosition = .region(MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: -32.2230, longitude: -58.1411),
         span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
-    )
+    ))
     @State private var quinchoSeleccionado: Quincho?
     @State private var showDetalle = false
 
@@ -881,7 +881,7 @@ struct MapaView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // Mapa
-                Map(initialPosition: .region(region)) {
+                Map(position: $cameraPosition) {
                     ForEach(vm.quinchos) { q in
                         Annotation(q.nombre, coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
                             Button {
@@ -1002,8 +1002,10 @@ struct MapaView: View {
                             Button {
                                 if let lat = locationManager.userLatitude, let lng = locationManager.userLongitude {
                                     withAnimation {
-                                        // Centrar en ubicación del usuario
-                                        print("Centrando en \(lat), \(lng)")
+                                        cameraPosition = .region(MKCoordinateRegion(
+                                            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                                            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                        ))
                                     }
                                 }
                             } label: {
