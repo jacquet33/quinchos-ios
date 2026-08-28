@@ -934,39 +934,229 @@ struct ReservaRow: View {
     }
 }
 
-// MARK: - Mapa
+// MARK: - Mapa estilo Booking
 
 struct MapaView: View {
     @EnvironmentObject var vm: QuinchosViewModel
+    @EnvironmentObject var favoritosVM: FavoritosViewModel
+    @StateObject private var locationManager = LocationManager()
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: -32.2230, longitude: -58.1411),
         span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
     )
+    @State private var quinchoSeleccionado: Quincho?
+    @State private var showDetalle = false
 
     var body: some View {
         NavigationStack {
-            Map(coordinateRegion: $region, annotationItems: vm.quinchos) { q in
-                MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
-                    NavigationLink(value: q.id) {
-                        VStack(spacing: 2) {
-                            Image(systemName: "mappin.circle.fill")
-                                .font(.title2).foregroundColor(.appPrimary)
-                            Text(q.precioDia.formattedPrecio)
-                                .font(.caption2).fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.appPrimary)
-                                .clipShape(Capsule())
+            ZStack(alignment: .bottom) {
+                // Mapa
+                Map(coordinateRegion: $region, showsUserLocation: true, annotationItems: vm.quinchos) { q in
+                    MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
+                        Button {
+                            withAnimation(.spring()) { quinchoSeleccionado = q }
+                        } label: {
+                            PriceMarker(
+                                precio: q.precioDia,
+                                rating: q.calificacionProm,
+                                isSelected: quinchoSeleccionado?.id == q.id
+                            )
                         }
                     }
                 }
+                .ignoresSafeArea()
+                .onAppear {
+                    locationManager.requestPermission()
+                    if let lat = locationManager.userLatitude, let lng = locationManager.userLongitude {
+                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                    }
+                }
+
+                // Tarjeta del quincho seleccionado (estilo Booking)
+                if let q = quinchoSeleccionado {
+                    VStack(spacing: 0) {
+                        // Handle
+                        Capsule().fill(Color.appTextMuted).frame(width: 36, height: 4).padding(.top, 8)
+                        
+                        HStack(spacing: 12) {
+                            // Foto
+                            AsyncImage(url: URL(string: q.imagenes?.first?.url ?? "")) { image in
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle().fill(Color.appSurfaceLight)
+                            }
+                            .frame(width: 110, height: 110)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            
+                            // Info
+                            VStack(alignment: .leading, spacing: 6) {
+                                // Tipo
+                                Text(q.tipo.label)
+                                    .font(.caption2).fontWeight(.bold)
+                                    .foregroundColor(.appPrimary)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(Color.appPrimary.opacity(0.12))
+                                    .clipShape(Capsule())
+                                
+                                Text(q.nombre)
+                                    .font(.headline).foregroundColor(.appTextPrimary)
+                                    .lineLimit(1)
+                                
+                                // Rating
+                                HStack(spacing: 3) {
+                                    Image(systemName: "star.fill").font(.caption2).foregroundColor(.appStar)
+                                    Text(String(format: "%.1f", q.calificacionProm))
+                                        .font(.caption).fontWeight(.bold).foregroundColor(.appStar)
+                                    Text("(\(q.totalResenas))").font(.caption2).foregroundColor(.appTextMuted)
+                                }
+                                
+                                // Ubicación
+                                HStack(spacing: 3) {
+                                    Image(systemName: "location").font(.system(size: 9))
+                                    Text(q.ciudad).font(.caption)
+                                }
+                                .foregroundColor(.appTextSecondary)
+                                
+                                // Capacidad
+                                HStack(spacing: 3) {
+                                    Image(systemName: "person.2").font(.system(size: 9))
+                                    Text("\(q.capacidadMin)–\(q.capacidadMax) personas").font(.caption)
+                                }
+                                .foregroundColor(.appTextSecondary)
+                                
+                                // Precio + botón
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        Text(q.precioDia.formattedPrecio)
+                                            .font(.title3).fontWeight(.bold).foregroundColor(.appPrimary)
+                                        Text("por día").font(.caption2).foregroundColor(.appTextMuted)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    NavigationLink(value: q.id) {
+                                        Text("Ver más")
+                                            .font(.caption).fontWeight(.bold).foregroundColor(.white)
+                                            .padding(.horizontal, 16).padding(.vertical, 8)
+                                            .background(Color.appPrimary)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                        }
+                        .padding(14)
+                    }
+                    .background(Color.appCard)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.3), radius: 10)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onTapGesture {} // Evitar que el tap cierre
+                    .gesture(DragGesture().onEnded { g in
+                        if g.translation.height > 50 {
+                            withAnimation { quinchoSeleccionado = nil }
+                        }
+                    })
+                }
+                
+                // Botones flotantes
+                VStack {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 10) {
+                            // Centrar en mi ubicación
+                            Button {
+                                if let lat = locationManager.userLatitude, let lng = locationManager.userLongitude {
+                                    withAnimation {
+                                        region.center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+                                        region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "location.fill")
+                                    .foregroundColor(.appPrimary)
+                                    .padding(12)
+                                    .background(.ultraThickMaterial)
+                                    .clipShape(Circle())
+                            }
+                            
+                            // Cerrar tarjeta
+                            if quinchoSeleccionado != nil {
+                                Button {
+                                    withAnimation { quinchoSeleccionado = nil }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .foregroundColor(.appTextSecondary)
+                                        .padding(12)
+                                        .background(.ultraThickMaterial)
+                                        .clipShape(Circle())
+                                }
+                            }
+                        }
+                        .padding(.trailing, 16)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 60)
             }
-            .ignoresSafeArea()
             .navigationDestination(for: String.self) { id in
                 QuinchoDetalleView(quinchoId: id)
             }
-            .task { await vm.buscar() }
+            .task {
+                await vm.buscar()
+                locationManager.requestLocation()
+            }
         }
+    }
+}
+
+// MARK: - Price Marker (estilo Booking)
+
+struct PriceMarker: View {
+    let precio: Int
+    let rating: Double
+    let isSelected: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 3) {
+                if rating >= 4.5 {
+                    Image(systemName: "star.fill").font(.system(size: 7)).foregroundColor(.appStar)
+                }
+                Text(precio.formattedPrecio)
+                    .font(.system(size: 12, weight: .bold))
+            }
+            .foregroundColor(isSelected ? .white : .appTextPrimary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isSelected ? Color.appPrimary : Color.appCard)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.appPrimaryDark : Color.appBorder, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.2), radius: 3, y: 2)
+            
+            // Flecha
+            Triangle()
+                .fill(isSelected ? Color.appPrimary : Color.appCard)
+                .frame(width: 10, height: 6)
+                .offset(y: -1)
+        }
+        .scaleEffect(isSelected ? 1.15 : 1.0)
+        .animation(.spring(response: 0.3), value: isSelected)
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
     }
 }
 
