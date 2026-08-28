@@ -48,9 +48,13 @@ workflows:
       - name: Build
         script: |
           cd $CM_BUILD_DIR
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" || echo "1")
+          NEXT=$((LATEST + 1))
+          echo "Building with version $NEXT"
           xcode-project build-ipa \
             --project "QuinchosApp.xcodeproj" \
-            --scheme "QuinchosApp"
+            --scheme "QuinchosApp" \
+            --build-arguments="CURRENT_PROJECT_VERSION=$NEXT"
     
     artifacts:
       - build/ios/ipa/*.ipa
