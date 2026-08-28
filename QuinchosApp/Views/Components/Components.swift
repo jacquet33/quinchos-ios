@@ -148,6 +148,7 @@ struct EstadoBadge: View {
         case .CONFIRMADA: return .estadoConfirmada
         case .CANCELADA: return .estadoCancelada
         case .COMPLETADA: return .estadoCompletada
+        case .RECHAZADA: return .estadoCancelada
         }
     }
 

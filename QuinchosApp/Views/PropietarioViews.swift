@@ -374,8 +374,7 @@ struct ReservaRecibidaRow: View {
                     Text(reserva.quincho?.nombre ?? "").font(.caption).foregroundColor(.appTextSecondary)
                 }
                 Spacer()
-                EstadoBadge(estado: EstadoReserva(rawValue: reserva.estado) ?? .PENDIENTE)
-            }
+                EstadoBadge(estado: EstadoReserva(rawValue: reserva.estado) ?? .PENDIENTE)            }
             
             HStack(spacing: 16) {
                 Label(reserva.fecha.prefix(10).description, systemImage: "calendar").font(.caption)
@@ -387,7 +386,7 @@ struct ReservaRecibidaRow: View {
             HStack {
                 Text(reserva.precioTotal.formattedPrecio).font(.headline).foregroundColor(.appPrimary)
                 Spacer()
-                if reserva.estado == "PENDIENTE" {
+                if reserva.estado == .PENDIENTE {
                     Button { onRechazar() } label: {
                         Text("Rechazar").font(.caption).fontWeight(.semibold).foregroundColor(.appError)
                             .padding(.horizontal, 12).padding(.vertical, 6)

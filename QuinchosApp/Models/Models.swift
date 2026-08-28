@@ -173,7 +173,7 @@ struct UsuarioResumen: Codable {
 }
 
 enum EstadoReserva: String, Codable {
-    case PENDIENTE, CONFIRMADA, CANCELADA, COMPLETADA
+    case PENDIENTE, CONFIRMADA, CANCELADA, COMPLETADA, RECHAZADA
 
     var label: String {
         switch self {
@@ -181,6 +181,7 @@ enum EstadoReserva: String, Codable {
         case .CONFIRMADA: return "Confirmada"
         case .CANCELADA: return "Cancelada"
         case .COMPLETADA: return "Completada"
+        case .RECHAZADA: return "Rechazada"
         }
     }
 
@@ -190,6 +191,7 @@ enum EstadoReserva: String, Codable {
         case .CONFIRMADA: return "estadoConfirmada"
         case .CANCELADA: return "estadoCancelada"
         case .COMPLETADA: return "estadoCompletada"
+        case .RECHAZADA: return "estadoCancelada"
         }
     }
 }
