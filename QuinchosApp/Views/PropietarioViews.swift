@@ -282,6 +282,10 @@ struct EditarQuinchoView: View {
                         .foregroundColor(.appTextPrimary).tint(.appPrimary)
                         .padding().background(Color.appSurface).clipShape(RoundedRectangle(cornerRadius: 10))
                     
+                    // Subir fotos
+                    Text("Fotos").font(.headline).foregroundColor(.appTextPrimary)
+                    ImageUploadButton(quinchoId: quincho.id)
+                    
                     // Accesos
                     NavigationLink { AgendaView(quinchoId: quincho.id, quinchoNombre: quincho.nombre) } label: {
                         MenuRow2(icon: "calendar", label: "Agenda y Horarios", color: .appPrimary)
