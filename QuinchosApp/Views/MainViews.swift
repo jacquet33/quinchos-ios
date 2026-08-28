@@ -180,6 +180,12 @@ struct MainTabView: View {
 struct ExplorarView: View {
     @EnvironmentObject var vm: QuinchosViewModel
     @EnvironmentObject var favoritosVM: FavoritosViewModel
+    @StateObject private var locationManager = LocationManager()
+    @State private var showFiltros = false
+    @State private var precioMax: Double = 200000
+    @State private var capacidadMin: Double = 1
+    @State private var amenidadesSeleccionadas: Set<String> = []
+    @State private var ordenarPor: String = "calificacion"
 
     var body: some View {
         NavigationStack {
@@ -187,27 +193,193 @@ struct ExplorarView: View {
                 Color.appBackground.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 14) {
                         // Header
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Encontrá tu lugar")
-                                .font(.title).fontWeight(.heavy)
-                                .foregroundColor(.appTextPrimary)
-                            Text("Quinchos, salones y más en tu zona")
-                                .font(.subheadline).foregroundColor(.appTextSecondary)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Encontrá tu lugar")
+                                    .font(.title).fontWeight(.heavy)
+                                    .foregroundColor(.appTextPrimary)
+                                if let city = locationManager.cityName {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "location.fill").font(.caption2)
+                                        Text(city)
+                                    }
+                                    .font(.subheadline).foregroundColor(.appPrimary)
+                                } else {
+                                    Text("Quinchos, salones y más en tu zona")
+                                        .font(.subheadline).foregroundColor(.appTextSecondary)
+                                }
+                            }
+                            Spacer()
+                            Button { showFiltros = true } label: {
+                                Image(systemName: "slider.horizontal.3")
+                                    .foregroundColor(.appPrimary)
+                                    .padding(10)
+                                    .background(Color.appSurface)
+                                    .clipShape(Circle())
+                            }
                         }
                         .padding(.horizontal)
 
+                        // GPS Banner
+                        if !locationManager.isAuthorized || locationManager.isDenied {
+                            LocationBanner(locationManager: locationManager)
+                                .padding(.horizontal)
+                        }
+
+                        // Radio selector (solo si tiene GPS)
+                        if locationManager.hasLocation {
+                            RadioSelector(radioKm: $vm.radioKm)
+                                .onChange(of: vm.radioKm) { _ in
+                                    Task { await buscarConFiltros() }
+                                }
+                        }
+
                         // Search
                         SearchBarView(text: $vm.searchQuery) {
-                            Task { await vm.buscar() }
+                            Task { await buscarConFiltros() }
                         }
                         .padding(.horizontal)
 
                         // Filters
                         FilterChipsView(selected: $vm.tipoSeleccionado) {
-                            Task { await vm.buscar() }
+                            Task { await buscarConFiltros() }
                         }
+
+                        // Filtros activos
+                        if precioMax < 200000 || capacidadMin > 1 || !amenidadesSeleccionadas.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    if precioMax < 200000 {
+                                        ActiveFilterChip(text: "Hasta \(Int(precioMax).formattedPrecio)") { precioMax = 200000; Task { await buscarConFiltros() } }
+                                    }
+                                    if capacidadMin > 1 {
+                                        ActiveFilterChip(text: "+\(Int(capacidadMin)) pers.") { capacidadMin = 1; Task { await buscarConFiltros() } }
+                                    }
+                                    ForEach(Array(amenidadesSeleccionadas), id: \.self) { a in
+                                        if let amenidad = Amenidad(rawValue: a) {
+                                            ActiveFilterChip(text: amenidad.label) {
+                                                amenidadesSeleccionadas.remove(a)
+                                                Task { await buscarConFiltros() }
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+
+                        // Destacados
+                        if !vm.destacados.isEmpty && vm.searchQuery.isEmpty {
+                            Text("⭐ Destacados")
+                                .font(.headline).foregroundColor(.appTextPrimary)
+                                .padding(.horizontal)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 14) {
+                                    ForEach(vm.destacados) { q in
+                                        NavigationLink(value: q.id) {
+                                            QuinchoCard(
+                                                quincho: q,
+                                                compact: true,
+                                                isFavorito: favoritosVM.esFavorito(q.id)
+                                            ) {
+                                                Task { await favoritosVM.toggleFavorito(quinchoId: q.id) }
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+
+                        // Resultados
+                        HStack {
+                            Text(vm.searchQuery.isEmpty ? "Todos los espacios" : "Resultados")
+                                .font(.headline).foregroundColor(.appTextPrimary)
+                            Spacer()
+                            Text("\(vm.quinchos.count) encontrados")
+                                .font(.caption).foregroundColor(.appTextMuted)
+                        }
+                        .padding(.horizontal)
+
+                        if vm.isLoading {
+                            ProgressView().tint(.appPrimary)
+                                .frame(maxWidth: .infinity, minHeight: 100)
+                        } else if vm.quinchos.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass").font(.system(size: 36)).foregroundColor(.appTextMuted)
+                                Text("No se encontraron resultados").foregroundColor(.appTextMuted)
+                                Text("Probá con otros filtros").font(.caption).foregroundColor(.appTextMuted)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 150)
+                        } else {
+                            LazyVStack(spacing: 14) {
+                                ForEach(vm.quinchos) { q in
+                                    NavigationLink(value: q.id) {
+                                        QuinchoCard(
+                                            quincho: q,
+                                            isFavorito: favoritosVM.esFavorito(q.id)
+                                        ) {
+                                            Task { await favoritosVM.toggleFavorito(quinchoId: q.id) }
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.vertical)
+                }
+            }
+            .navigationDestination(for: String.self) { quinchoId in
+                QuinchoDetalleView(quinchoId: quinchoId)
+            }
+            .task {
+                await vm.cargarDestacados()
+                locationManager.requestPermission()
+                await buscarConFiltros()
+                await favoritosVM.cargarFavoritos()
+            }
+            .sheet(isPresented: $showFiltros) {
+                FiltrosAvanzadosView(
+                    precioMax: $precioMax,
+                    capacidadMin: $capacidadMin,
+                    amenidadesSeleccionadas: $amenidadesSeleccionadas,
+                    ordenarPor: $ordenarPor,
+                    onAplicar: { Task { await buscarConFiltros() } }
+                )
+                .presentationDetents([.large])
+            }
+        }
+    }
+    
+    func buscarConFiltros() async {
+        vm.ordenarPor = ordenarPor
+        vm.precioMax = precioMax < 200000 ? Int(precioMax) : nil
+        await vm.buscar(
+            lat: locationManager.userLatitude,
+            lng: locationManager.userLongitude
+        )
+    }
+}
+
+struct ActiveFilterChip: View {
+    let text: String; let onRemove: () -> Void
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(text).font(.caption)
+            Button(action: onRemove) { Image(systemName: "xmark").font(.system(size: 9)) }
+        }
+        .foregroundColor(.appPrimary)
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(Color.appPrimary.opacity(0.12))
+        .clipShape(Capsule())
+    }
+}
 
                         // Destacados
                         if !vm.destacados.isEmpty {
@@ -743,6 +915,19 @@ struct ReservaRow: View {
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .overlay(Capsule().stroke(Color.appError, lineWidth: 1))
                 }
+                if reserva.estado == .COMPLETADA {
+                    NavigationLink {
+                        EscribirResenaView(quinchoId: reserva.quincho?.id ?? "", quinchoNombre: reserva.quincho?.nombre ?? "", reservaId: reserva.id)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "star.fill").font(.caption2)
+                            Text("Valorar").font(.caption).fontWeight(.bold)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Color.appStar).clipShape(Capsule())
+                    }
+                }
             }
         }
         .padding(14)
@@ -837,15 +1022,23 @@ struct CuentaView: View {
                                 .overlay(Image(systemName: "person").font(.title).foregroundColor(.appTextMuted))
                             Text(authVM.usuario?.nombre ?? "Usuario").font(.title3).fontWeight(.bold).foregroundColor(.appTextPrimary)
                             Text(authVM.usuario?.email ?? "").font(.caption).foregroundColor(.appTextSecondary)
+                            if let rol = authVM.usuario?.rol {
+                                Text(rol == .PROPIETARIO ? "Propietario" : rol == .ADMIN ? "Admin" : "Usuario")
+                                    .font(.caption2).fontWeight(.bold)
+                                    .foregroundColor(.appPrimary)
+                                    .padding(.horizontal, 10).padding(.vertical, 4)
+                                    .background(Color.appPrimary.opacity(0.12))
+                                    .clipShape(Capsule())
+                            }
                         }
 
                         // Menu items
                         VStack(spacing: 0) {
-                            MenuRow(icon: "person", label: "Editar perfil")
-                            MenuRow(icon: "bell", label: "Notificaciones")
-                            MenuRow(icon: "creditcard", label: "Métodos de pago")
-                            MenuRow(icon: "shield", label: "Seguridad")
-                            MenuRow(icon: "questionmark.circle", label: "Ayuda")
+                            NavigationLink { EditarPerfilView() } label: { MenuRowLink(icon: "person", label: "Editar perfil") }
+                            NavigationLink { FavoritosView() } label: { MenuRowLink(icon: "heart", label: "Mis favoritos") }
+                            MenuRowLink(icon: "bell", label: "Notificaciones")
+                            MenuRowLink(icon: "questionmark.circle", label: "Ayuda")
+                            MenuRowLink(icon: "doc.text", label: "Términos y condiciones")
                         }
                         .background(Color.appSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -873,18 +1066,16 @@ struct CuentaView: View {
     }
 }
 
-struct MenuRow: View {
+struct MenuRowLink: View {
     let icon: String; let label: String
     var body: some View {
-        Button {} label: {
-            HStack(spacing: 14) {
-                Image(systemName: icon).foregroundColor(.appTextSecondary).frame(width: 22)
-                Text(label).foregroundColor(.appTextPrimary)
-                Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundColor(.appTextMuted)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 14)
+        HStack(spacing: 14) {
+            Image(systemName: icon).foregroundColor(.appTextSecondary).frame(width: 22)
+            Text(label).foregroundColor(.appTextPrimary)
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption).foregroundColor(.appTextMuted)
         }
+        .padding(.horizontal, 16).padding(.vertical, 14)
         Divider().background(Color.appBorder).padding(.leading, 52)
     }
 }
