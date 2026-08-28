@@ -535,12 +535,37 @@ struct ReservarView: View {
     let precio: Int
     @EnvironmentObject var reservasVM: ReservasViewModel
     @Environment(\.dismiss) var dismiss
-    @State private var fecha = ""
-    @State private var horaInicio = "12:00"
-    @State private var horaFin = "20:00"
+    @State private var fechaSeleccionada = Date().addingTimeInterval(86400) // mañana
+    @State private var horaInicioDate = Calendar.current.date(from: DateComponents(hour: 12, minute: 0))!
+    @State private var horaFinDate = Calendar.current.date(from: DateComponents(hour: 20, minute: 0))!
     @State private var personas = ""
     @State private var notas = ""
     @State private var showSuccess = false
+
+    private var fechaString: String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: fechaSeleccionada)
+    }
+    
+    private var horaInicioString: String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: horaInicioDate)
+    }
+    
+    private var horaFinString: String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: horaFinDate)
+    }
+    
+    private var fechaDisplay: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "es_AR")
+        f.dateStyle = .long
+        return f.string(from: fechaSeleccionada)
+    }
 
     var body: some View {
         ZStack {
@@ -555,19 +580,50 @@ struct ReservarView: View {
                     }
                     .padding().background(Color.appSurface).clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    FormField(label: "Fecha del evento", placeholder: "2026-09-15", text: $fecha)
-                    HStack(spacing: 12) {
-                        FormField(label: "Hora inicio", placeholder: "12:00", text: $horaInicio)
-                        FormField(label: "Hora fin", placeholder: "20:00", text: $horaFin)
+                    // Fecha con calendario
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Fecha del evento").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                        DatePicker("", selection: $fechaSeleccionada, in: Date()..., displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                            .tint(.appPrimary)
+                            .padding(12)
+                            .background(Color.appSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .environment(\.locale, Locale(identifier: "es_AR"))
                     }
+
+                    // Horarios
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Hora inicio").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            DatePicker("", selection: $horaInicioDate, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .tint(.appPrimary)
+                                .padding(12)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Hora fin").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            DatePicker("", selection: $horaFinDate, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .tint(.appPrimary)
+                                .padding(12)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+
                     FormField(label: "Cantidad de personas", placeholder: "25", text: $personas, keyboard: .numberPad)
                     FormField(label: "Notas (opcional)", placeholder: "Tipo de evento...", text: $notas, multiline: true)
 
                     // Resumen
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Resumen").font(.headline).foregroundColor(.appTextPrimary)
-                        SummaryRow(label: "Fecha", value: fecha.isEmpty ? "—" : fecha)
-                        SummaryRow(label: "Horario", value: "\(horaInicio) – \(horaFin)")
+                        SummaryRow(label: "Fecha", value: fechaDisplay)
+                        SummaryRow(label: "Horario", value: "\(horaInicioString) – \(horaFinString)")
                         Divider().background(Color.appBorder)
                         SummaryRow(label: "Total estimado", value: precio.formattedPrecio, highlight: true)
                     }
@@ -581,9 +637,9 @@ struct ReservarView: View {
                         Task {
                             let ok = await reservasVM.crearReserva(
                                 quinchoId: quinchoId,
-                                fecha: fecha,
-                                horaInicio: horaInicio,
-                                horaFin: horaFin,
+                                fecha: fechaString,
+                                horaInicio: horaInicioString,
+                                horaFin: horaFinString,
                                 personas: Int(personas) ?? 1,
                                 notas: notas.isEmpty ? nil : notas
                             )
