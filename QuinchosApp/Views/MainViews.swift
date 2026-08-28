@@ -881,7 +881,7 @@ struct MapaView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // Mapa
-                Map(coordinateRegion: $region, showsUserLocation: true, annotationItems: vm.quinchos) { q in
+                Map(coordinateRegion: $region, annotationItems: vm.quinchos) { q in
                     MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
                         Button {
                             withAnimation(.spring()) { quinchoSeleccionado = q }
