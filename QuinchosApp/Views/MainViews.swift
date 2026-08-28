@@ -173,11 +173,13 @@ struct LoginView: View {
 
 struct MainTabView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    
+    @StateObject private var badges = BadgeManager.shared
+    @Environment(\.scenePhase) private var scenePhase
+
     var esPropietario: Bool {
         authVM.usuario?.rol == .PROPIETARIO || authVM.usuario?.rol == .ADMIN
     }
-    
+
     var body: some View {
         TabView {
             ExplorarView()
@@ -188,10 +190,12 @@ struct MainTabView: View {
 
             ReservasView()
                 .tabItem { Label("Reservas", systemImage: "calendar") }
+                .badge(badges.reservasActualizadas)
 
             if esPropietario {
                 PropietarioView()
                     .tabItem { Label("Mi Panel", systemImage: "briefcase") }
+                    .badge(badges.reservasPendientes)
             } else {
                 FavoritosView()
                     .tabItem { Label("Favoritos", systemImage: "heart") }
@@ -201,6 +205,14 @@ struct MainTabView: View {
                 .tabItem { Label("Cuenta", systemImage: "person") }
         }
         .tint(.appPrimary)
+        .task {
+            badges.iniciarAutoRefresh(esPropietario: esPropietario)
+        }
+        .onChange(of: scenePhase) { _, nuevaFase in
+            if nuevaFase == .active {
+                Task { await badges.refrescar(esPropietario: esPropietario) }
+            }
+        }
     }
 }
 
@@ -906,7 +918,10 @@ struct ReservasView: View {
                 }
             }
             .navigationTitle("Mis Reservas")
-            .task { await vm.cargarReservas() }
+            .task {
+                await vm.cargarReservas()
+                BadgeManager.shared.limpiarActualizadas()
+            }
         }
     }
 }

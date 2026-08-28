@@ -5,6 +5,7 @@ import SwiftUI
 struct PropietarioView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var dashVM = DashboardViewModel()
+    @StateObject private var badges = BadgeManager.shared
     
     var body: some View {
         NavigationStack {
@@ -24,7 +25,7 @@ struct PropietarioView: View {
                         // Accesos rápidos
                         VStack(spacing: 10) {
                             NavigationLink { MisQuinchosView() } label: { MenuRow2(icon: "house.fill", label: "Mis Quinchos", color: .appPrimary) }
-                            NavigationLink { ReservasRecibidasView() } label: { MenuRow2(icon: "calendar.badge.clock", label: "Reservas Recibidas", color: .appWarning) }
+                            NavigationLink { ReservasRecibidasView() } label: { MenuRow2(icon: "calendar.badge.clock", label: "Reservas Recibidas", color: .appWarning, badge: badges.reservasPendientes) }
                             NavigationLink { ClientesView() } label: { MenuRow2(icon: "person.2.fill", label: "Mis Clientes", color: .appSuccess) }
                             NavigationLink { CrearQuinchoView() } label: { MenuRow2(icon: "plus.circle.fill", label: "Nuevo Quincho", color: .appPrimary) }
                         }
@@ -68,12 +69,25 @@ struct StatCard: View {
 }
 
 struct MenuRow2: View {
-    let icon: String; let label: String; let color: Color
+    let icon: String
+    let label: String
+    let color: Color
+    var badge: Int = 0
+
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon).foregroundColor(color).frame(width: 28)
             Text(label).foregroundColor(.appTextPrimary).font(.body)
             Spacer()
+            if badge > 0 {
+                Text(badge > 99 ? "99+" : "\(badge)")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, badge > 9 ? 7 : 0)
+                    .frame(minWidth: 22, minHeight: 22)
+                    .background(Color.appError)
+                    .clipShape(Capsule())
+            }
             Image(systemName: "chevron.right").font(.caption).foregroundColor(.appTextMuted)
         }
         .padding(14).background(Color.appSurface).clipShape(RoundedRectangle(cornerRadius: 12))
@@ -380,7 +394,10 @@ struct ReservasRecibidasView: View {
             }
         }
         .navigationTitle("Reservas Recibidas")
-        .task { await vm.cargar() }
+        .task {
+            await vm.cargar()
+            await BadgeManager.shared.refrescar(esPropietario: true)
+        }
     }
 }
 

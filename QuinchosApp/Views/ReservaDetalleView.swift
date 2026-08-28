@@ -345,6 +345,7 @@ final class ReservaDetalleViewModel: ObservableObject {
             if http.statusCode < 400 {
                 estadoActual = nuevoEstado
                 if let m = motivo, !m.isEmpty { motivoCancelacion = m }
+                await BadgeManager.shared.refrescar(esPropietario: true)
             } else {
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let msg = json["error"] as? String {

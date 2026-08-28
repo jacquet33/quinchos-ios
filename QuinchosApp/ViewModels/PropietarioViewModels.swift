@@ -68,8 +68,21 @@ class DashboardViewModel: ObservableObject {
         )
     }
     
-    func confirmar(_ id: String) { Task { await accion(id, endpoint: "confirmar"); await cargar() } }
-    func rechazar(_ id: String) { Task { await accion(id, endpoint: "rechazar"); await cargar() } }
+    func confirmar(_ id: String) {
+        Task {
+            await accion(id, endpoint: "confirmar")
+            await cargar()
+            await BadgeManager.shared.refrescar(esPropietario: true)
+        }
+    }
+
+    func rechazar(_ id: String) {
+        Task {
+            await accion(id, endpoint: "rechazar")
+            await cargar()
+            await BadgeManager.shared.refrescar(esPropietario: true)
+        }
+    }
     
     private func accion(_ id: String, endpoint: String) async {
         guard let token = await APIService.shared.getToken(),
@@ -116,8 +129,21 @@ class ReservasRecibidasViewModel: ObservableObject {
         reservas = resp.data
     }
     
-    func confirmar(_ id: String) { Task { await accion(id, "confirmar"); await cargar() } }
-    func rechazar(_ id: String) { Task { await accion(id, "rechazar"); await cargar() } }
+    func confirmar(_ id: String) {
+        Task {
+            await accion(id, "confirmar")
+            await cargar()
+            await BadgeManager.shared.refrescar(esPropietario: true)
+        }
+    }
+
+    func rechazar(_ id: String) {
+        Task {
+            await accion(id, "rechazar")
+            await cargar()
+            await BadgeManager.shared.refrescar(esPropietario: true)
+        }
+    }
     
     private func accion(_ id: String, _ endpoint: String) async {
         guard let token = await APIService.shared.getToken(),
