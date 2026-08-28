@@ -103,6 +103,40 @@ struct DistanciaChip: View {
 
 // MARK: - Selector de radio de búsqueda
 
+struct RadioSelectorWithAction: View {
+    @Binding var radioKm: Double
+    let onChange: () -> Void
+    let opciones: [Double] = [5, 10, 20, 50, 100]
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Image(systemName: "scope").foregroundColor(.appTextMuted).font(.caption)
+                
+                ForEach(opciones, id: \.self) { km in
+                    let activo = radioKm == km
+                    Button {
+                        radioKm = km
+                        onChange()
+                    } label: {
+                        Text("\(Int(km)) km")
+                            .font(.caption).fontWeight(.medium)
+                            .foregroundColor(activo ? .white : .appTextSecondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(activo ? Color.appPrimary : Color.appSurface)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(activo ? Color.clear : Color.appBorder, lineWidth: 1)
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+}
+
 struct RadioSelector: View {
     @Binding var radioKm: Double
     let opciones: [Double] = [5, 10, 20, 50, 100]
