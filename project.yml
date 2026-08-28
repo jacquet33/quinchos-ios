@@ -14,6 +14,11 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: L2V2C22VFC
 
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    from: "11.0.0"
+
 targets:
   QuinchosApp:
     type: application
@@ -37,9 +42,5 @@ targets:
         INFOPLIST_KEY_UIBackgroundModes: "remote-notification"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
-      - package: FirebaseMessaging
-
-packages:
-  FirebaseMessaging:
-    url: https://github.com/firebase/firebase-ios-sdk.git
-    from: "11.0.0"
+      - package: Firebase
+        product: FirebaseMessaging
