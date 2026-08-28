@@ -33,7 +33,16 @@ struct PropietarioView: View {
                         if let proximas = dashVM.dashboard?.proximasReservas, !proximas.isEmpty {
                             Text("Próximas reservas").font(.headline).foregroundColor(.appTextPrimary)
                             ForEach(proximas) { r in
-                                ReservaRecibidaRow(reserva: r, onConfirmar: { dashVM.confirmar(r.id) }, onRechazar: { dashVM.rechazar(r.id) })
+                                NavigationLink {
+                                    ReservaDetalleView(reserva: r, esPropietario: true) {
+                                        Task { await dashVM.cargar() }
+                                    }
+                                } label: {
+                                    ReservaRecibidaRow(reserva: r, onConfirmar: { dashVM.confirmar(r.id) }, onRechazar: { dashVM.rechazar(r.id) })
+                                        .background(Color.appCard)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -350,8 +359,14 @@ struct ReservasRecibidasView: View {
                 }
             } else {
                 List(vm.reservas) { r in
-                    ReservaRecibidaRow(reserva: r, onConfirmar: { vm.confirmar(r.id) }, onRechazar: { vm.rechazar(r.id) })
-                        .listRowBackground(Color.appCard)
+                    NavigationLink {
+                        ReservaDetalleView(reserva: r, esPropietario: true) {
+                            Task { await vm.cargar() }
+                        }
+                    } label: {
+                        ReservaRecibidaRow(reserva: r, onConfirmar: { vm.confirmar(r.id) }, onRechazar: { vm.rechazar(r.id) })
+                    }
+                    .listRowBackground(Color.appCard)
                 }
                 .listStyle(.plain).scrollContentBackground(.hidden)
             }

@@ -813,9 +813,15 @@ struct ReservasView: View {
                     }
                 } else {
                     List(vm.reservas) { r in
-                        ReservaRow(reserva: r) { Task { await vm.cancelarReserva(id: r.id) } }
-                            .listRowBackground(Color.appCard)
-                            .listRowSeparatorTint(.appBorder)
+                        NavigationLink {
+                            ReservaDetalleView(reserva: r, esPropietario: false) {
+                                Task { await vm.cargarReservas() }
+                            }
+                        } label: {
+                            ReservaRow(reserva: r) { Task { await vm.cancelarReserva(id: r.id) } }
+                        }
+                        .listRowBackground(Color.appCard)
+                        .listRowSeparatorTint(.appBorder)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)

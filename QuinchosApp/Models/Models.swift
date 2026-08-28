@@ -154,6 +154,7 @@ struct Reserva: Codable, Identifiable {
     let precioTotal: Int
     let estado: EstadoReserva
     let notas: String?
+    let motivoCancelacion: String?
     let quincho: QuinchoResumen?
     let usuario: UsuarioResumen?
 }
