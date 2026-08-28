@@ -3,11 +3,7 @@ import Foundation
 // MARK: - API Configuration
 
 enum APIConfig {
-    #if DEBUG
-    static let baseURL = "http://localhost:3000/api"
-    #else
-    static let baseURL = "https://tu-backend.com/api"
-    #endif
+    static let baseURL = "https://quinchos.art3d-studio.com.ar/api"
 }
 
 // MARK: - API Errors
