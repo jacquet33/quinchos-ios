@@ -882,7 +882,6 @@ struct MapaView: View {
             ZStack(alignment: .bottom) {
                 // Mapa
                 Map(initialPosition: .region(region)) {
-                    UserAnnotation()
                     ForEach(vm.quinchos) { q in
                         Annotation(q.nombre, coordinate: CLLocationCoordinate2D(latitude: q.latitud, longitude: q.longitud)) {
                             Button {
