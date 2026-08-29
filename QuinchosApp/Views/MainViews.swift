@@ -489,27 +489,7 @@ struct QuinchoDetalleView: View {
                             if let imagenes = q.imagenes, !imagenes.isEmpty {
                                 TabView {
                                     ForEach(imagenes, id: \.id) { img in
-                                        AsyncImage(url: URL(string: img.url)) { fase in
-                                            switch fase {
-                                            case .success(let image):
-                                                image.resizable().aspectRatio(contentMode: .fill)
-                                            case .failure:
-                                                ZStack {
-                                                    Color.appSurfaceLight
-                                                    VStack(spacing: 6) {
-                                                        Image(systemName: "photo.badge.exclamationmark")
-                                                            .font(.largeTitle).foregroundColor(.appTextMuted)
-                                                        Text("No se pudo cargar la foto")
-                                                            .font(.caption).foregroundColor(.appTextMuted)
-                                                    }
-                                                }
-                                            default:
-                                                ZStack {
-                                                    Color.appSurfaceLight
-                                                    ProgressView().tint(.appTextMuted)
-                                                }
-                                            }
-                                        }
+                                        ImagenRemota(url: img.url)
                                     }
                                 }
                                 .tabViewStyle(.page(indexDisplayMode: .always))
@@ -1110,11 +1090,7 @@ struct MapaView: View {
                         
                         HStack(spacing: 12) {
                             // Foto
-                            AsyncImage(url: URL(string: q.imagenes?.first?.url ?? "")) { image in
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle().fill(Color.appSurfaceLight)
-                            }
+                            ImagenRemota(url: q.imagenes?.first?.url, usarMiniatura: true)
                             .frame(width: 110, height: 110)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             

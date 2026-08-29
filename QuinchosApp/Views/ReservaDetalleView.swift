@@ -31,11 +31,7 @@ struct ReservaDetalleView: View {
                     // ─── Quincho ───
                     if let q = reserva.quincho {
                         HStack(spacing: 12) {
-                            AsyncImage(url: URL(string: q.imagenes?.first?.url ?? "")) { img in
-                                img.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle().fill(Color.appSurfaceLight)
-                            }
+                            ImagenRemota(url: q.imagenes?.first?.url, usarMiniatura: true)
                             .frame(width: 80, height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             

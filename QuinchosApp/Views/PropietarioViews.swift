@@ -130,9 +130,7 @@ struct MisQuinchosView: View {
                 List(vm.quinchos) { q in
                     NavigationLink { EditarQuinchoView(quincho: q) } label: {
                         HStack(spacing: 12) {
-                            AsyncImage(url: URL(string: q.imagenes?.first?.url ?? "")) { img in
-                                img.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: { Rectangle().fill(Color.appSurfaceLight) }
+                            ImagenRemota(url: q.imagenes?.first?.url, usarMiniatura: true)
                                 .frame(width: 60, height: 60).clipShape(RoundedRectangle(cornerRadius: 8))
                             
                             VStack(alignment: .leading, spacing: 4) {

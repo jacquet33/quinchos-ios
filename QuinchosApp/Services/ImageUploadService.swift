@@ -78,6 +78,25 @@ struct CameraPickerView: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Redimensionar imágenes
+
+extension UIImage {
+    /// Achica la imagen manteniendo proporción, para no subir 4 MB de cámara
+    func redimensionada(maxLado: CGFloat = 1600) -> UIImage {
+        let ladoMayor = max(size.width, size.height)
+        guard ladoMayor > maxLado else { return self }
+
+        let escala = maxLado / ladoMayor
+        let nuevoTamano = CGSize(width: size.width * escala, height: size.height * escala)
+
+        let formato = UIGraphicsImageRendererFormat()
+        formato.scale = 1
+        return UIGraphicsImageRenderer(size: nuevoTamano, format: formato).image { _ in
+            draw(in: CGRect(origin: .zero, size: nuevoTamano))
+        }
+    }
+}
+
 // MARK: - Upload Service
 
 @MainActor
@@ -112,8 +131,8 @@ class ImageUploadService: ObservableObject {
         // Construir body multipart
         var body = Data()
         for (i, image) in images.enumerated() {
-            // Comprimir a JPEG 80% calidad
-            guard let imageData = image.jpegData(compressionQuality: 0.8) else { continue }
+            // Achicar a 1600px y comprimir: de ~4 MB a ~300 KB
+            guard let imageData = image.redimensionada().jpegData(compressionQuality: 0.8) else { continue }
             
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"imagenes\"; filename=\"foto_\(i).jpg\"\r\n".data(using: .utf8)!)
@@ -158,7 +177,7 @@ class ImageUploadService: ObservableObject {
     func subirAvatar(image: UIImage) async -> String? {
         guard let token = await APIService.shared.getToken() else { return nil }
         guard let url = URL(string: "\(APIConfig.baseURL)/uploads/avatar") else { return nil }
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return nil }
+        guard let imageData = image.redimensionada(maxLado: 800).jpegData(compressionQuality: 0.8) else { return nil }
         
         let boundary = UUID().uuidString
         var request = URLRequest(url: url)
