@@ -39,6 +39,45 @@ struct ImagePickerView: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Cámara
+
+struct CameraPickerView: UIViewControllerRepresentable {
+    @Binding var selectedImages: [UIImage]
+    @Environment(\.dismiss) var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.allowsEditing = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPickerView
+        init(_ parent: CameraPickerView) { self.parent = parent }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.selectedImages.append(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
 // MARK: - Upload Service
 
 @MainActor
@@ -151,6 +190,7 @@ struct ImageUploadButton: View {
     @StateObject private var uploader = ImageUploadService()
     @State private var selectedImages: [UIImage] = []
     @State private var showPicker = false
+    @State private var showCamera = false
     @State private var showSuccess = false
     
     var body: some View {
@@ -183,12 +223,23 @@ struct ImageUploadButton: View {
             
             // Botones
             HStack(spacing: 12) {
-                Button {
-                    showPicker = true
+                Menu {
+                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                        Button {
+                            showCamera = true
+                        } label: {
+                            Label("Tomar foto", systemImage: "camera.fill")
+                        }
+                    }
+                    Button {
+                        showPicker = true
+                    } label: {
+                        Label("Elegir de la galería", systemImage: "photo.on.rectangle.angled")
+                    }
                 } label: {
                     HStack {
-                        Image(systemName: "photo.on.rectangle.angled")
-                        Text("Elegir fotos")
+                        Image(systemName: "plus.circle")
+                        Text("Agregar fotos")
                     }
                     .font(.subheadline).fontWeight(.semibold)
                     .foregroundColor(.appPrimary)
@@ -236,6 +287,10 @@ struct ImageUploadButton: View {
         }
         .sheet(isPresented: $showPicker) {
             ImagePickerView(selectedImages: $selectedImages, maxSelection: 10)
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPickerView(selectedImages: $selectedImages)
+                .ignoresSafeArea()
         }
         .alert("¡Fotos subidas!", isPresented: $showSuccess) {
             Button("OK") {}

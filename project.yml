@@ -33,7 +33,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Necesitamos tu ubicación para mostrarte quinchos cercanos"
-        INFOPLIST_KEY_NSCameraUsageDescription: "Permite tomar fotos para tus reseñas"
+        INFOPLIST_KEY_NSCameraUsageDescription: "Para tomar fotos de tu espacio y de tu perfil"
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Para elegir fotos de tu espacio y de tu perfil"
         INFOPLIST_KEY_UIBackgroundModes: "remote-notification"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: QuinchosApp/QuinchosApp.entitlements

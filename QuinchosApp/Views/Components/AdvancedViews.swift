@@ -303,6 +303,7 @@ struct EditarPerfilView: View {
     @State private var saved = false
     @StateObject private var uploader = ImageUploadService()
     @State private var showPicker = false
+    @State private var showCamera = false
     @State private var avatarImages: [UIImage] = []
     
     var body: some View {
@@ -311,7 +312,16 @@ struct EditarPerfilView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Avatar
-                    Button { showPicker = true } label: {
+                    Menu {
+                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                            Button { showCamera = true } label: {
+                                Label("Tomar foto", systemImage: "camera.fill")
+                            }
+                        }
+                        Button { showPicker = true } label: {
+                            Label("Elegir de la galería", systemImage: "photo.on.rectangle.angled")
+                        }
+                    } label: {
                         ZStack(alignment: .bottomTrailing) {
                             if let avatar = avatarImages.first {
                                 Image(uiImage: avatar)
@@ -352,6 +362,9 @@ struct EditarPerfilView: View {
         }
         .sheet(isPresented: $showPicker) {
             ImagePickerView(selectedImages: $avatarImages, maxSelection: 1)
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPickerView(selectedImages: $avatarImages).ignoresSafeArea()
         }
         .alert("Perfil actualizado", isPresented: $saved) { Button("OK") {} }
     }
