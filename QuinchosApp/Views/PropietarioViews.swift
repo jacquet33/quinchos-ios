@@ -6,6 +6,7 @@ struct PropietarioView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var dashVM = DashboardViewModel()
     @StateObject private var badges = BadgeManager.shared
+    @AppStorage("modoExplorar") private var modoExplorar = false
     
     var body: some View {
         NavigationStack {
@@ -51,6 +52,22 @@ struct PropietarioView: View {
                 }
             }
             .navigationTitle("Mi Panel")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        withAnimation { modoExplorar = true }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "magnifyingglass").font(.caption)
+                            Text("Explorar").font(.caption).fontWeight(.semibold)
+                        }
+                        .foregroundColor(.appPrimary)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(Color.appPrimary.opacity(0.12))
+                        .clipShape(Capsule())
+                    }
+                }
+            }
             .task { await dashVM.cargar() }
         }
     }
