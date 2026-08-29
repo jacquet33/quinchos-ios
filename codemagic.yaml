@@ -31,10 +31,15 @@ workflows:
 
       - name: Fetch signing files
         script: |
+          # Borrar profiles viejos que no tienen la capability de push
+          app-store-connect profiles delete \
+            $(app-store-connect profiles list --bundle-id-identifier "$BUNDLE_ID" --json 2>/dev/null | python3 -c "import sys,json; print(' '.join(p['id'] for p in json.load(sys.stdin)))" 2>/dev/null) \
+            2>/dev/null || echo "Sin profiles previos para borrar"
+
+          # Crear uno nuevo con todas las capabilities actuales
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --strict-match-identifier
+            --create
 
       - name: Set up keychain
         script: |
