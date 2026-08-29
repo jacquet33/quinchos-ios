@@ -382,15 +382,23 @@ struct NuevoServicioView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
                         .disabled(nombre.count < 2 || vm.isLoading)
+
+                        Spacer().frame(height: 40)
                     }
                     .padding()
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationTitle("Nuevo servicio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancelar") { dismiss() }.foregroundColor(.appTextSecondary)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Listo") { hideKeyboard() }
+                        .fontWeight(.semibold).foregroundColor(.appPrimary)
                 }
             }
             .task { await vm.cargarSugerencias() }

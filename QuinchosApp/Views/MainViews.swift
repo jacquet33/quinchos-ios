@@ -900,11 +900,21 @@ struct ReservarView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .disabled(reservasVM.isLoading)
+
+                    Spacer().frame(height: 40)
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("Reservar")
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") { hideKeyboard() }
+                    .fontWeight(.semibold).foregroundColor(.appPrimary)
+            }
+        }
         .alert("¡Reserva enviada!", isPresented: $showSuccess) {
             Button("Genial") { dismiss() }
         } message: {

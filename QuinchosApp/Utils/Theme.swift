@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Color Palette
 
@@ -52,5 +53,16 @@ extension Int {
         formatter.numberStyle = .decimal
         formatter.locale = Locale(identifier: "es_AR")
         return "$\(formatter.string(from: NSNumber(value: self)) ?? "\(self)")"
+    }
+}
+
+// MARK: - Cerrar teclado
+
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
     }
 }

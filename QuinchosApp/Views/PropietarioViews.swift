@@ -175,12 +175,22 @@ struct CrearQuinchoView: View {
     @State private var capacidadMin = ""
     @State private var capacidadMax = ""
     @State private var tipo: TipoEspacio = .QUINCHO
-    @State private var horaApertura = "08:00"
-    @State private var horaCierre = "00:00"
+    @State private var horaAperturaDate = Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
+    @State private var horaCierreDate = Calendar.current.date(from: DateComponents(hour: 23, minute: 59)) ?? Date()
     @State private var isLoading = false
     @State private var error: String?
     @State private var success = false
-    
+    @FocusState private var campoEnfocado: Bool
+
+    private var horaApertura: String { Self.formatoHora.string(from: horaAperturaDate) }
+    private var horaCierre: String { Self.formatoHora.string(from: horaCierreDate) }
+
+    private static let formatoHora: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -223,8 +233,22 @@ struct CrearQuinchoView: View {
                         FormField(label: "Cap. máxima", placeholder: "60", text: $capacidadMax, keyboard: .numberPad)
                     }
                     HStack(spacing: 12) {
-                        FormField(label: "Hora apertura", placeholder: "08:00", text: $horaApertura)
-                        FormField(label: "Hora cierre", placeholder: "00:00", text: $horaCierre)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Hora apertura").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            DatePicker("", selection: $horaAperturaDate, displayedComponents: .hourAndMinute)
+                                .labelsHidden().tint(.appPrimary)
+                                .padding(10).frame(maxWidth: .infinity)
+                                .background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Hora cierre").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            DatePicker("", selection: $horaCierreDate, displayedComponents: .hourAndMinute)
+                                .labelsHidden().tint(.appPrimary)
+                                .padding(10).frame(maxWidth: .infinity)
+                                .background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
                     }
                     
                     if let error = error {
@@ -243,11 +267,22 @@ struct CrearQuinchoView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .disabled(isLoading)
+
+                    // Espacio para que el teclado no tape el botón
+                    Spacer().frame(height: 40)
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("Nuevo Quincho")
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") { campoEnfocado = false; hideKeyboard() }
+                    .fontWeight(.semibold).foregroundColor(.appPrimary)
+            }
+        }
         .alert("¡Quincho creado!", isPresented: $success) {
             Button("OK") { dismiss() }
         }
@@ -383,11 +418,21 @@ struct EditarQuinchoView: View {
                     Button("Eliminar Quincho") { showDelete = true }
                         .frame(maxWidth: .infinity).padding()
                         .foregroundColor(.appError).fontWeight(.semibold)
+
+                    Spacer().frame(height: 40)
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("Editar")
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") { hideKeyboard() }
+                    .fontWeight(.semibold).foregroundColor(.appPrimary)
+            }
+        }
         .alert("¿Eliminar quincho?", isPresented: $showDelete) {
             Button("Cancelar", role: .cancel) {}
             Button("Eliminar", role: .destructive) { Task { await eliminar() } }

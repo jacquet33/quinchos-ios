@@ -188,11 +188,21 @@ struct EscribirResenaView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .disabled(calificacion == 0 || comentario.count < 10 || vm.isLoading)
+
+                    Spacer().frame(height: 40)
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("Escribir reseña")
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") { hideKeyboard() }
+                    .fontWeight(.semibold).foregroundColor(.appPrimary)
+            }
+        }
         .alert("¡Gracias por tu reseña!", isPresented: $showSuccess) {
             Button("OK") { dismiss() }
         }
