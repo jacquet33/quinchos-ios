@@ -148,7 +148,7 @@ class ImageUploadService: ObservableObject {
             isUploading = false
             return []
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
             isUploading = false
             return []
         }

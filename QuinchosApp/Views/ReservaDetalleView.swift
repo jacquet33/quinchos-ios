@@ -355,7 +355,7 @@ final class ReservaDetalleViewModel: ObservableObject {
                 }
             }
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
     }
 }

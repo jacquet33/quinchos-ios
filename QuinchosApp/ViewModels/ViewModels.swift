@@ -28,7 +28,7 @@ final class AuthViewModel: ObservableObject {
             usuario = response.usuario
             isAuthenticated = true
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }
@@ -41,7 +41,7 @@ final class AuthViewModel: ObservableObject {
             usuario = response.usuario
             isAuthenticated = true
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }
@@ -81,7 +81,7 @@ final class ReservasViewModel: ObservableObject {
             let response = try await api.misReservas()
             reservas = response.data
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }
@@ -103,7 +103,7 @@ final class ReservasViewModel: ObservableObject {
             isLoading = false
             return true
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
             isLoading = false
             return false
         }
@@ -114,7 +114,7 @@ final class ReservasViewModel: ObservableObject {
             _ = try await api.cancelarReserva(id: id)
             await cargarReservas()
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
     }
 }
@@ -176,7 +176,7 @@ final class ResenasViewModel: ObservableObject {
             let response = try await api.resenasQuincho(quinchoId: quinchoId)
             resenas = response.data
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }
@@ -189,7 +189,7 @@ final class ResenasViewModel: ObservableObject {
             isLoading = false
             return true
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
             isLoading = false
             return false
         }

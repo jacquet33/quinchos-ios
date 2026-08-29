@@ -35,7 +35,7 @@ final class QuinchosViewModel: ObservableObject {
             )
             quinchos = response.data
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }
@@ -65,7 +65,7 @@ final class QuinchosViewModel: ObservableObject {
             let response = try await api.quincho(id: id)
             quinchoDetalle = response.data
         } catch {
-            self.error = error.localizedDescription
+            self.error = APIService.mensaje(error)
         }
         isLoading = false
     }

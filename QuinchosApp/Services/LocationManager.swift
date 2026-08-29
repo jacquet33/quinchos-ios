@@ -98,7 +98,7 @@ extension LocationManager: CLLocationManagerDelegate {
                     self.locationError = "Error de ubicación: \(clError.localizedDescription)"
                 }
             } else {
-                self.locationError = error.localizedDescription
+                self.locationError = "No se pudo obtener tu ubicación"
             }
         }
     }

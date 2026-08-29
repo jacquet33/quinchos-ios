@@ -18,12 +18,49 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return "URL inválida"
-        case .noData: return "Sin datos"
-        case .decodingFailed: return "Error al procesar respuesta"
-        case .serverError(let msg): return msg
-        case .unauthorized: return "Sesión expirada"
-        case .networkError(let err): return err.localizedDescription
+        case .invalidURL:
+            return "No se pudo conectar con el servidor"
+        case .noData:
+            return "El servidor no respondió"
+        case .decodingFailed:
+            return "Hubo un problema al procesar la respuesta"
+        case .serverError(let msg):
+            return msg
+        case .unauthorized:
+            return "Tu sesión expiró. Volvé a iniciar sesión"
+        case .networkError(let err):
+            return APIError.traducir(err)
+        }
+    }
+
+    /// Traduce los errores de red del sistema, que vienen en inglés
+    static func traducir(_ error: Error) -> String {
+        let nsError = error as NSError
+
+        guard nsError.domain == NSURLErrorDomain else {
+            return "Ocurrió un error inesperado"
+        }
+
+        switch nsError.code {
+        case NSURLErrorNotConnectedToInternet:
+            return "No hay conexión a internet"
+        case NSURLErrorTimedOut:
+            return "El servidor tardó demasiado en responder"
+        case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
+            return "No se pudo conectar con el servidor"
+        case NSURLErrorNetworkConnectionLost:
+            return "Se perdió la conexión"
+        case NSURLErrorSecureConnectionFailed,
+             NSURLErrorServerCertificateUntrusted,
+             NSURLErrorServerCertificateHasBadDate,
+             NSURLErrorServerCertificateNotYetValid:
+            return "Hubo un problema con la conexión segura. Revisá la fecha y hora del dispositivo"
+        case NSURLErrorDataNotAllowed:
+            return "No hay datos móviles disponibles"
+        case NSURLErrorCancelled:
+            return "La operación se canceló"
+        default:
+            return "Error de conexión. Intentá de nuevo"
         }
     }
 }
@@ -112,6 +149,14 @@ actor APIService {
             print("❌ Decoding error: \(error)")
             throw APIError.decodingFailed
         }
+    }
+
+    /// Mensaje en español para cualquier error
+    nonisolated static func mensaje(_ error: Error) -> String {
+        if let apiError = error as? APIError {
+            return apiError.errorDescription ?? "Ocurrió un error"
+        }
+        return APIError.traducir(error)
     }
 
     // MARK: - Auth

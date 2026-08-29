@@ -288,13 +288,44 @@ struct CrearQuinchoView: View {
         }
     }
     
-    func crear() async {
-        guard !nombre.isEmpty, !descripcion.isEmpty else {
-            error = "Completá el nombre y la descripción"
-            return
+    /// Valida el formulario y devuelve el primer problema encontrado
+    private func validar() -> String? {
+        if nombre.trimmingCharacters(in: .whitespaces).count < 3 {
+            return "Poné un nombre de al menos 3 caracteres"
         }
-        guard direccion.esValida else {
-            error = "Elegí una dirección de la lista de sugerencias"
+        if descripcion.trimmingCharacters(in: .whitespaces).count < 10 {
+            return "Escribí una descripción de al menos 10 caracteres"
+        }
+        if !direccion.esValida {
+            return "Elegí la dirección de la lista o ubicala en el mapa"
+        }
+
+        guard let pHora = Int(precioHora), pHora > 0 else {
+            return "Ingresá el precio por hora"
+        }
+        guard let pDia = Int(precioDia), pDia > 0 else {
+            return "Ingresá el precio por día"
+        }
+        if pDia < pHora {
+            return "El precio por día (\(pDia.formattedPrecio)) no puede ser menor al precio por hora (\(pHora.formattedPrecio)). ¿Los escribiste al revés?"
+        }
+
+        guard let capMin = Int(capacidadMin), capMin > 0 else {
+            return "Ingresá la capacidad mínima"
+        }
+        guard let capMax = Int(capacidadMax), capMax > 0 else {
+            return "Ingresá la capacidad máxima"
+        }
+        if capMax < capMin {
+            return "La capacidad máxima (\(capMax)) no puede ser menor a la mínima (\(capMin))"
+        }
+
+        return nil
+    }
+
+    func crear() async {
+        if let problema = validar() {
+            error = problema
             return
         }
         isLoading = true; error = nil
@@ -320,7 +351,7 @@ struct CrearQuinchoView: View {
             let (respData, _) = try await URLSession.shared.data(for: req)
             let resp = try JSONDecoder().decode(MessageResponse.self, from: respData)
             if resp.ok { success = true } else { error = resp.error ?? "Error" }
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = APIService.mensaje(error) }
         isLoading = false
     }
 }
