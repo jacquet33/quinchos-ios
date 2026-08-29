@@ -370,6 +370,7 @@ struct EditarQuinchoView: View {
     @State private var editandoDireccion = false
     @State private var showDelete = false
     @State private var saved = false
+    @State private var errorEdicion: String?
     
     init(quincho: Quincho) {
         self.quincho = quincho
@@ -443,6 +444,9 @@ struct EditarQuinchoView: View {
                     NavigationLink { ServiciosExtraView(quinchoId: quincho.id) } label: {
                         MenuRow2(icon: "plus.square.on.square", label: "Servicios extra con costo", color: .appStar)
                     }
+                    NavigationLink { DemandaView(quinchoId: quincho.id, quinchoNombre: quincho.nombre) } label: {
+                        MenuRow2(icon: "chart.line.uptrend.xyaxis", label: "Demanda y estadísticas", color: .appError)
+                    }
                     NavigationLink { AgendaView(quinchoId: quincho.id, quinchoNombre: quincho.nombre) } label: {
                         MenuRow2(icon: "calendar", label: "Agenda y Horarios", color: .appPrimary)
                     }
@@ -450,6 +454,10 @@ struct EditarQuinchoView: View {
                         MenuRow2(icon: "xmark.circle", label: "Bloquear Fechas", color: .appWarning)
                     }
                     
+                    if let e = errorEdicion {
+                        Text(e).font(.caption).foregroundColor(.appError)
+                    }
+
                     Button("Guardar Cambios") { Task { await guardar() } }
                         .frame(maxWidth: .infinity).padding()
                         .background(Color.appPrimary).foregroundColor(.white).fontWeight(.bold)
@@ -480,7 +488,28 @@ struct EditarQuinchoView: View {
         .alert("Cambios guardados", isPresented: $saved) { Button("OK") {} }
     }
     
+    private func validarEdicion() -> String? {
+        if nombre.trimmingCharacters(in: .whitespaces).count < 3 {
+            return "Poné un nombre de al menos 3 caracteres"
+        }
+        guard let pHora = Int(precioHora), pHora > 0 else {
+            return "Ingresá el precio por hora"
+        }
+        guard let pDia = Int(precioDia), pDia > 0 else {
+            return "Ingresá el precio por día"
+        }
+        if pDia < pHora {
+            return "El precio por día (\(pDia.formattedPrecio)) no puede ser menor al precio por hora (\(pHora.formattedPrecio)). ¿Los escribiste al revés?"
+        }
+        return nil
+    }
+
     func guardar() async {
+        if let problema = validarEdicion() {
+            errorEdicion = problema
+            return
+        }
+        errorEdicion = nil
         var body: [String: Any] = ["nombre": nombre, "descripcion": descripcion, "precioDia": Int(precioDia) ?? 0, "precioHora": Int(precioHora) ?? 0, "disponible": disponible]
         if direccion.esValida {
             body["direccion"] = direccion.calle

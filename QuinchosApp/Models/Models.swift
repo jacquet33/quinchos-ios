@@ -56,6 +56,8 @@ struct Quincho: Codable, Identifiable, Hashable {
     let amenidades: [QuinchoAmenidadWrapper]?
     let resenas: [Resena]?
     let serviciosExtra: [ServicioExtra]?
+    let demanda: Demanda?
+    let disponibilidad: Disponibilidad?
     
     static func == (lhs: Quincho, rhs: Quincho) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }

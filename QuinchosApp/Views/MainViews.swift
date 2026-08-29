@@ -546,14 +546,24 @@ struct QuinchoDetalleView: View {
                             }
                             .foregroundColor(.appTextSecondary).font(.subheadline)
 
-                            HStack(spacing: 5) {
-                                Image(systemName: "star.fill").foregroundColor(.appStar)
-                                Text(String(format: "%.1f", q.calificacionProm))
-                                    .fontWeight(.bold).foregroundColor(.appStar)
-                                Text("· \(q.totalResenas) reseñas")
-                                    .foregroundColor(.appTextMuted)
+                            HStack(spacing: 8) {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "star.fill").foregroundColor(.appStar)
+                                    Text(String(format: "%.1f", q.calificacionProm))
+                                        .fontWeight(.bold).foregroundColor(.appStar)
+                                    Text("· \(q.totalResenas) reseñas")
+                                        .foregroundColor(.appTextMuted)
+                                }
+                                .font(.subheadline)
+
+                                if let d = q.demanda, d.valeLaPenaMostrar {
+                                    DemandaBadge(demanda: d)
+                                }
                             }
-                            .font(.subheadline)
+
+                            if let disp = q.disponibilidad {
+                                AvisoDisponibilidad(disponibilidad: disp)
+                            }
 
                             // Precios
                             HStack(spacing: 12) {
