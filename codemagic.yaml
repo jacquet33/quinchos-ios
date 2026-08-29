@@ -53,10 +53,24 @@ workflows:
       - name: Build
         script: |
           cd $CM_BUILD_DIR
+          set +e
           xcode-project build-ipa \
             --project "QuinchosApp.xcodeproj" \
-            --scheme "QuinchosApp" \
-            --verbose 2>&1 | tail -100
+            --scheme "QuinchosApp" > /tmp/build_full.log 2>&1
+          CODIGO=$?
+          set -e
+
+          if [ $CODIGO -ne 0 ]; then
+            echo ""
+            echo "################################################"
+            echo "###          ERRORES DE COMPILACION          ###"
+            echo "################################################"
+            echo ""
+            grep -E "error:" /tmp/build_full.log | sed 's|/Users/builder/clone/||' | sort -u | head -30
+            echo ""
+            echo "################################################"
+            exit $CODIGO
+          fi
     
     artifacts:
       - build/ios/ipa/*.ipa
