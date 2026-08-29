@@ -180,23 +180,35 @@ struct MainTabView: View {
         authVM.usuario?.rol == .PROPIETARIO || authVM.usuario?.rol == .ADMIN
     }
 
+    /// El propietario puede elegir si quiere ver el catálogo de otros espacios
+    @AppStorage("mostrarCatalogo") private var mostrarCatalogo = false
+
+    /// Muestra las pestañas de búsqueda si es cliente, o si es propietario y lo activó
+    var verCatalogo: Bool { !esPropietario || mostrarCatalogo }
+
     var body: some View {
         TabView {
-            ExplorarView()
-                .tabItem { Label("Explorar", systemImage: "magnifyingglass") }
-
-            MapaView()
-                .tabItem { Label("Mapa", systemImage: "map") }
-
-            ReservasView()
-                .tabItem { Label("Reservas", systemImage: "calendar") }
-                .badge(badges.reservasActualizadas)
-
+            // ─── Panel del propietario ───
             if esPropietario {
                 PropietarioView()
                     .tabItem { Label("Mi Panel", systemImage: "briefcase") }
                     .badge(badges.reservasPendientes)
-            } else {
+            }
+
+            // ─── Búsqueda (siempre para clientes, opcional para propietarios) ───
+            if verCatalogo {
+                ExplorarView()
+                    .tabItem { Label("Explorar", systemImage: "magnifyingglass") }
+
+                MapaView()
+                    .tabItem { Label("Mapa", systemImage: "map") }
+            }
+
+            ReservasView()
+                .tabItem { Label(esPropietario ? "Mis Reservas" : "Reservas", systemImage: "calendar") }
+                .badge(badges.reservasActualizadas)
+
+            if verCatalogo {
                 FavoritosView()
                     .tabItem { Label("Favoritos", systemImage: "heart") }
             }
@@ -1230,6 +1242,12 @@ struct FavoritosView: View {
 
 struct CuentaView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @AppStorage("mostrarCatalogo") private var mostrarCatalogo = false
+
+    var esPropietario: Bool {
+        authVM.usuario?.rol == .PROPIETARIO || authVM.usuario?.rol == .ADMIN
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1252,10 +1270,34 @@ struct CuentaView: View {
                             }
                         }
 
+                        // Preferencias del propietario
+                        if esPropietario {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Toggle(isOn: $mostrarCatalogo) {
+                                    HStack(spacing: 14) {
+                                        Image(systemName: "magnifyingglass")
+                                            .foregroundColor(.appTextSecondary).frame(width: 22)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Explorar otros espacios")
+                                                .foregroundColor(.appTextPrimary)
+                                            Text("Buscar y reservar como cliente")
+                                                .font(.caption2).foregroundColor(.appTextMuted)
+                                        }
+                                    }
+                                }
+                                .tint(.appPrimary)
+                                .padding(.horizontal, 16).padding(.vertical, 12)
+                            }
+                            .background(Color.appSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+
                         // Menu items
                         VStack(spacing: 0) {
                             NavigationLink { EditarPerfilView() } label: { MenuRowLink(icon: "person", label: "Editar perfil") }
-                            NavigationLink { FavoritosView() } label: { MenuRowLink(icon: "heart", label: "Mis favoritos") }
+                            if !esPropietario || mostrarCatalogo {
+                                NavigationLink { FavoritosView() } label: { MenuRowLink(icon: "heart", label: "Mis favoritos") }
+                            }
                             MenuRowLink(icon: "bell", label: "Notificaciones")
                             MenuRowLink(icon: "questionmark.circle", label: "Ayuda")
                             MenuRowLink(icon: "doc.text", label: "Términos y condiciones")
