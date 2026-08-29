@@ -30,7 +30,9 @@ final class AddressSearchService: NSObject, ObservableObject {
     override init() {
         super.init()
         completer.delegate = self
-        completer.resultTypes = .address
+        // Direcciones + lugares: en ciudades chicas de Argentina Apple
+        // suele tener mejor cobertura de puntos de interés que de alturas
+        completer.resultTypes = [.address, .pointOfInterest]
 
         // Priorizar resultados de la zona de Entre Ríos
         completer.region = MKCoordinateRegion(
@@ -51,6 +53,32 @@ final class AddressSearchService: NSObject, ObservableObject {
     func limpiar() {
         sugerencias = []
         completer.queryFragment = ""
+        resultadosDirectos = []
+    }
+
+    /// Búsqueda directa (MKLocalSearch) para cuando el autocompletado no encuentra nada
+    @Published var resultadosDirectos: [MKMapItem] = []
+
+    func busquedaDirecta(_ texto: String, ciudad: String = "Colón, Entre Ríos") async {
+        guard texto.count >= 3 else { return }
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = "\(texto), \(ciudad)"
+        request.region = completer.region
+        guard let response = try? await MKLocalSearch(request: request).start() else { return }
+        resultadosDirectos = Array(response.mapItems.prefix(6))
+    }
+
+    /// Convierte un MKMapItem en dirección
+    func desdeMapItem(_ item: MKMapItem) -> DireccionSeleccionada {
+        let place = item.placemark
+        var dir = DireccionSeleccionada()
+        let calle = place.thoroughfare ?? item.name ?? ""
+        dir.calle = place.subThoroughfare.map { "\(calle) \($0)" } ?? calle
+        dir.ciudad = place.locality ?? place.subAdministrativeArea ?? ""
+        dir.provincia = place.administrativeArea ?? "Entre Ríos"
+        dir.latitud = place.coordinate.latitude
+        dir.longitud = place.coordinate.longitude
+        return dir
     }
 
     /// Convierte una sugerencia en dirección con coordenadas reales
@@ -104,6 +132,7 @@ struct AddressSearchField: View {
     @StateObject private var service = AddressSearchService()
     @State private var texto = ""
     @State private var mostrarSugerencias = false
+    @State private var mostrarMapa = false
     @FocusState private var enfocado: Bool
 
     var body: some View {
@@ -196,10 +225,25 @@ struct AddressSearchField: View {
                     Text("\(direccion.ciudad), \(direccion.provincia)")
                         .font(.caption).foregroundColor(.appTextSecondary)
                 }
-            } else if !texto.isEmpty && service.sugerencias.isEmpty && !service.buscando {
-                Text("Elegí una dirección de la lista para ubicarla en el mapa")
-                    .font(.caption2).foregroundColor(.appWarning)
             }
+
+            // Siempre disponible: ubicar a mano
+            Button {
+                mostrarMapa = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "map").font(.caption)
+                    Text(direccion.esValida ? "Ajustar ubicación en el mapa" : "No la encuentro, ubicar en el mapa")
+                        .font(.caption)
+                }
+                .foregroundColor(.appPrimary)
+            }
+        }
+        .sheet(isPresented: $mostrarMapa) {
+            UbicarEnMapaView(direccion: $direccion)
+                .onDisappear {
+                    if direccion.esValida { texto = direccion.calle }
+                }
         }
     }
 
@@ -238,5 +282,135 @@ struct MiniMapaConfirmacion: View {
         .frame(height: 140)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Ubicar manualmente en el mapa
+
+struct UbicarEnMapaView: View {
+    @Binding var direccion: DireccionSeleccionada
+    @Environment(\.dismiss) var dismiss
+
+    @State private var centro = CLLocationCoordinate2D(latitude: -32.2230, longitude: -58.1411)
+    @State private var posicion: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: -32.2230, longitude: -58.1411),
+            span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        )
+    )
+    @State private var calle: String = ""
+    @State private var ciudad: String = ""
+    @State private var resolviendo = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.appBackground.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    // Mapa con pin fijo al centro
+                    ZStack {
+                        Map(position: $posicion)
+                            .onMapCameraChange(frequency: .onEnd) { contexto in
+                                centro = contexto.region.center
+                                Task { await resolverDireccion() }
+                            }
+
+                        // Pin fijo en el centro de la pantalla
+                        Image(systemName: "mappin")
+                            .font(.system(size: 34))
+                            .foregroundColor(.appPrimary)
+                            .shadow(radius: 3)
+                            .offset(y: -17)
+                            .allowsHitTesting(false)
+                    }
+                    .frame(maxHeight: .infinity)
+
+                    // Datos de la ubicación
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "mappin.and.ellipse").foregroundColor(.appPrimary)
+                            Text("Movés el mapa para ubicar el pin")
+                                .font(.caption).foregroundColor(.appTextSecondary)
+                            Spacer()
+                            if resolviendo { ProgressView().scaleEffect(0.7) }
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Dirección").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            TextField("Ej: San Martín 450", text: $calle)
+                                .foregroundColor(.appTextPrimary)
+                                .padding(12).background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Ciudad").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            TextField("Colón", text: $ciudad)
+                                .foregroundColor(.appTextPrimary)
+                                .padding(12).background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+
+                        Button {
+                            direccion = DireccionSeleccionada(
+                                calle: calle.trimmingCharacters(in: .whitespaces),
+                                ciudad: ciudad.trimmingCharacters(in: .whitespaces),
+                                provincia: "Entre Ríos",
+                                latitud: centro.latitude,
+                                longitud: centro.longitude
+                            )
+                            dismiss()
+                        } label: {
+                            Text("Confirmar ubicación").fontWeight(.bold)
+                                .frame(maxWidth: .infinity).padding()
+                                .background(calle.count >= 3 ? Color.appPrimary : Color.appSurfaceLight)
+                                .foregroundColor(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(calle.count < 3)
+                    }
+                    .padding()
+                    .background(Color.appBackground)
+                }
+            }
+            .navigationTitle("Ubicar en el mapa")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancelar") { dismiss() }.foregroundColor(.appTextSecondary)
+                }
+            }
+            .task {
+                if direccion.esValida {
+                    centro = CLLocationCoordinate2D(latitude: direccion.latitud, longitude: direccion.longitud)
+                    posicion = .region(MKCoordinateRegion(center: centro,
+                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))
+                    calle = direccion.calle
+                    ciudad = direccion.ciudad
+                } else {
+                    await resolverDireccion()
+                }
+            }
+        }
+    }
+
+    /// Geocodificación inversa: propone la calle según dónde quedó el pin
+    private func resolverDireccion() async {
+        resolviendo = true
+        defer { resolviendo = false }
+
+        let ubicacion = CLLocation(latitude: centro.latitude, longitude: centro.longitude)
+        let geocoder = CLGeocoder()
+        guard let places = try? await geocoder.reverseGeocodeLocation(ubicacion, preferredLocale: Locale(identifier: "es_AR")),
+              let place = places.first else { return }
+
+        // Solo autocompletar si el usuario todavía no escribió nada
+        if calle.isEmpty, let via = place.thoroughfare {
+            calle = place.subThoroughfare.map { "\(via) \($0)" } ?? via
+        }
+        if ciudad.isEmpty {
+            ciudad = place.locality ?? place.subAdministrativeArea ?? ""
+        }
     }
 }
