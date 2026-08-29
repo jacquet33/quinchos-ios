@@ -310,7 +310,7 @@ struct UbicarEnMapaView: View {
                 VStack(spacing: 0) {
                     // Mapa con pin fijo al centro
                     ZStack {
-                        Map(position: $posicion)
+                        Map(position: $posicion) { }
                             .onMapCameraChange(frequency: .onEnd) { contexto in
                                 centro = contexto.region.center
                                 Task { await resolverDireccion() }
@@ -402,7 +402,7 @@ struct UbicarEnMapaView: View {
 
         let ubicacion = CLLocation(latitude: centro.latitude, longitude: centro.longitude)
         let geocoder = CLGeocoder()
-        guard let places = try? await geocoder.reverseGeocodeLocation(ubicacion, preferredLocale: Locale(identifier: "es_AR")),
+        guard let places = try? await geocoder.reverseGeocodeLocation(ubicacion),
               let place = places.first else { return }
 
         // Solo autocompletar si el usuario todavía no escribió nada
