@@ -485,18 +485,47 @@ struct QuinchoDetalleView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
                         // Hero Image
-                        TabView {
-                            ForEach(q.imagenes ?? [], id: \.id) { img in
-                                AsyncImage(url: URL(string: img.url)) { image in
-                                    image.resizable().aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Rectangle().fill(Color.appSurfaceLight)
+                        Group {
+                            if let imagenes = q.imagenes, !imagenes.isEmpty {
+                                TabView {
+                                    ForEach(imagenes, id: \.id) { img in
+                                        AsyncImage(url: URL(string: img.url)) { fase in
+                                            switch fase {
+                                            case .success(let image):
+                                                image.resizable().aspectRatio(contentMode: .fill)
+                                            case .failure:
+                                                ZStack {
+                                                    Color.appSurfaceLight
+                                                    VStack(spacing: 6) {
+                                                        Image(systemName: "photo.badge.exclamationmark")
+                                                            .font(.largeTitle).foregroundColor(.appTextMuted)
+                                                        Text("No se pudo cargar la foto")
+                                                            .font(.caption).foregroundColor(.appTextMuted)
+                                                    }
+                                                }
+                                            default:
+                                                ZStack {
+                                                    Color.appSurfaceLight
+                                                    ProgressView().tint(.appTextMuted)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                .tabViewStyle(.page(indexDisplayMode: .always))
+                            } else {
+                                ZStack {
+                                    Color.appSurfaceLight
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "photo.on.rectangle.angled")
+                                            .font(.system(size: 40)).foregroundColor(.appTextMuted)
+                                        Text("Sin fotos todavía")
+                                            .font(.subheadline).foregroundColor(.appTextMuted)
+                                    }
                                 }
                             }
                         }
                         .frame(height: 280)
-                        .tabViewStyle(.page(indexDisplayMode: .always))
-                        .clipShape(RoundedRectangle(cornerRadius: 0))
 
                         VStack(alignment: .leading, spacing: 16) {
                             // Tipo badge + Nombre

@@ -19,11 +19,17 @@ struct QuinchoCard: View {
         VStack(alignment: .leading, spacing: 0) {
             // Imagen
             ZStack(alignment: .topTrailing) {
-                AsyncImage(url: URL(string: quincho.imagenes?.first?.url ?? "")) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle().fill(Color.appSurfaceLight)
-                        .overlay(ProgressView().tint(.appTextMuted))
+                AsyncImage(url: URL(string: quincho.imagenes?.first?.url ?? "")) { fase in
+                    switch fase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    case .failure:
+                        Rectangle().fill(Color.appSurfaceLight)
+                            .overlay(Image(systemName: "photo").font(.title2).foregroundColor(.appTextMuted))
+                    default:
+                        Rectangle().fill(Color.appSurfaceLight)
+                            .overlay(ProgressView().tint(.appTextMuted))
+                    }
                 }
                 .frame(height: compact ? 140 : 190)
                 .clipped()
