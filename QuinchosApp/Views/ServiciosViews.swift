@@ -2,6 +2,20 @@ import SwiftUI
 
 // MARK: - Modelos
 
+enum TipoServicio: String, Codable {
+    case ADICIONAL, INCLUIDO
+
+    var titulo: String {
+        self == .INCLUIDO ? "Incluido" : "Adicional"
+    }
+    var explicacion: String {
+        self == .INCLUIDO
+            ? "Viene en el precio. Si el cliente no lo quiere, paga menos."
+            : "No viene incluido. Si el cliente lo quiere, paga más."
+    }
+    var color: Color { self == .INCLUIDO ? .appSuccess : .appPrimary }
+}
+
 struct ServicioExtra: Codable, Identifiable, Hashable {
     let id: String
     let nombre: String
@@ -9,6 +23,18 @@ struct ServicioExtra: Codable, Identifiable, Hashable {
     let precio: Int
     let icono: String?
     let disponible: Bool
+    var tipo: TipoServicio = .ADICIONAL
+
+    /// Cómo se muestra el impacto en el precio
+    var etiquetaPrecio: String {
+        if precio == 0 { return tipo == .INCLUIDO ? "Incluido" : "Sin cargo" }
+        return tipo == .INCLUIDO ? "-\(precio.formattedPrecio) si lo quitás" : "+\(precio.formattedPrecio)"
+    }
+}
+
+struct SugerenciasResponse: Codable {
+    let incluidos: [SugerenciaServicio]
+    let adicionales: [SugerenciaServicio]
 }
 
 struct AmenidadCatalogo: Codable, Identifiable {
@@ -113,15 +139,18 @@ struct ServiciosExtraView: View {
     @StateObject private var vm = ServiciosViewModel()
     @State private var showNuevo = false
 
+    var incluidos: [ServicioExtra] { vm.servicios.filter { $0.tipo == .INCLUIDO } }
+    var adicionales: [ServicioExtra] { vm.servicios.filter { $0.tipo == .ADICIONAL } }
+
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
 
             if vm.servicios.isEmpty && !vm.isLoading {
                 VStack(spacing: 14) {
-                    Image(systemName: "plus.square.dashed").font(.system(size: 44)).foregroundColor(.appTextMuted)
-                    Text("Sin servicios extra").font(.headline).foregroundColor(.appTextPrimary)
-                    Text("Agregá servicios opcionales que el cliente puede sumar a su reserva, como pelotero, mozo o equipo de sonido")
+                    Image(systemName: "slider.horizontal.3").font(.system(size: 44)).foregroundColor(.appTextMuted)
+                    Text("Sin servicios configurados").font(.headline).foregroundColor(.appTextPrimary)
+                    Text("Definí qué viene incluido y qué se puede sumar, con su impacto en el precio")
                         .font(.caption).foregroundColor(.appTextMuted)
                         .multilineTextAlignment(.center)
                     Button("Agregar servicio") { showNuevo = true }
@@ -130,50 +159,42 @@ struct ServiciosExtraView: View {
                 .padding(32)
             } else {
                 List {
-                    ForEach(vm.servicios) { s in
-                        HStack(spacing: 12) {
-                            Image(systemName: s.icono ?? "star")
-                                .foregroundColor(.appPrimary).frame(width: 28)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(s.nombre).font(.subheadline).fontWeight(.semibold)
-                                    .foregroundColor(s.disponible ? .appTextPrimary : .appTextMuted)
-                                if let d = s.descripcion, !d.isEmpty {
-                                    Text(d).font(.caption2).foregroundColor(.appTextSecondary).lineLimit(1)
-                                }
+                    if !incluidos.isEmpty {
+                        Section {
+                            ForEach(incluidos) { s in
+                                FilaServicio(servicio: s)
+                                    .listRowBackground(Color.appCard)
+                                    .swipeActions { accionesSwipe(s) }
                             }
-
-                            Spacer()
-
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(s.precio == 0 ? "Sin cargo" : s.precio.formattedPrecio)
-                                    .font(.caption).fontWeight(.bold)
-                                    .foregroundColor(s.precio == 0 ? .appSuccess : .appPrimary)
-                                if !s.disponible {
-                                    Text("Inactivo").font(.caption2).foregroundColor(.appTextMuted)
-                                }
-                            }
+                        } header: {
+                            Text("Incluidos en el precio")
+                                .foregroundColor(.appSuccess).font(.caption).fontWeight(.bold)
+                        } footer: {
+                            Text("El cliente los puede quitar y paga menos")
+                                .font(.caption2).foregroundColor(.appTextMuted)
                         }
-                        .padding(.vertical, 4)
-                        .listRowBackground(Color.appCard)
-                        .swipeActions {
-                            Button(role: .destructive) {
-                                Task { await vm.eliminarServicio(s.id, quinchoId: quinchoId) }
-                            } label: { Label("Eliminar", systemImage: "trash") }
+                    }
 
-                            Button {
-                                Task { await vm.toggleDisponible(s, quinchoId: quinchoId) }
-                            } label: {
-                                Label(s.disponible ? "Ocultar" : "Mostrar", systemImage: "eye")
+                    if !adicionales.isEmpty {
+                        Section {
+                            ForEach(adicionales) { s in
+                                FilaServicio(servicio: s)
+                                    .listRowBackground(Color.appCard)
+                                    .swipeActions { accionesSwipe(s) }
                             }
-                            .tint(.appWarning)
+                        } header: {
+                            Text("Adicionales con costo")
+                                .foregroundColor(.appPrimary).font(.caption).fontWeight(.bold)
+                        } footer: {
+                            Text("El cliente los puede sumar y paga más")
+                                .font(.caption2).foregroundColor(.appTextMuted)
                         }
                     }
                 }
-                .listStyle(.plain).scrollContentBackground(.hidden)
+                .listStyle(.insetGrouped).scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle("Servicios extra")
+        .navigationTitle("Servicios")
         .toolbar {
             Button { showNuevo = true } label: {
                 Image(systemName: "plus").foregroundColor(.appPrimary)
@@ -185,6 +206,56 @@ struct ServiciosExtraView: View {
             }
         }
         .task { await vm.cargarServicios(quinchoId: quinchoId, admin: true) }
+    }
+
+    @ViewBuilder
+    func accionesSwipe(_ s: ServicioExtra) -> some View {
+        Button(role: .destructive) {
+            Task { await vm.eliminarServicio(s.id, quinchoId: quinchoId) }
+        } label: { Label("Eliminar", systemImage: "trash") }
+
+        Button {
+            Task { await vm.toggleDisponible(s, quinchoId: quinchoId) }
+        } label: {
+            Label(s.disponible ? "Ocultar" : "Mostrar", systemImage: "eye")
+        }
+        .tint(.appWarning)
+    }
+}
+
+struct FilaServicio: View {
+    let servicio: ServicioExtra
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: servicio.icono ?? "star")
+                .foregroundColor(servicio.tipo.color).frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(servicio.nombre)
+                    .font(.subheadline).fontWeight(.semibold)
+                    .foregroundColor(servicio.disponible ? .appTextPrimary : .appTextMuted)
+                if let d = servicio.descripcion, !d.isEmpty {
+                    Text(d).font(.caption2).foregroundColor(.appTextSecondary).lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                if servicio.precio > 0 {
+                    Text(servicio.tipo == .INCLUIDO ? "-\(servicio.precio.formattedPrecio)" : "+\(servicio.precio.formattedPrecio)")
+                        .font(.caption).fontWeight(.bold)
+                        .foregroundColor(servicio.tipo.color)
+                } else {
+                    Text("Sin cargo").font(.caption).foregroundColor(.appSuccess)
+                }
+                if !servicio.disponible {
+                    Text("Inactivo").font(.caption2).foregroundColor(.appTextMuted)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -199,6 +270,11 @@ struct NuevoServicioView: View {
     @State private var descripcion = ""
     @State private var precio = ""
     @State private var iconoSeleccionado = "star"
+    @State private var tipo: TipoServicio = .ADICIONAL
+
+    var sugerenciasDelTipo: [SugerenciaServicio] {
+        tipo == .INCLUIDO ? vm.sugerenciasIncluidos : vm.sugerenciasAdicionales
+    }
 
     var body: some View {
         NavigationStack {
@@ -207,20 +283,44 @@ struct NuevoServicioView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
 
-                        // Sugerencias
-                        if !vm.sugerencias.isEmpty && nombre.isEmpty {
+                        // ─── Tipo de servicio ───
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("¿Viene incluido en el precio?")
+                                .font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+
+                            HStack(spacing: 10) {
+                                TipoServicioCard(
+                                    titulo: "Sí, incluido",
+                                    subtitulo: "Si lo quitan, pagan menos",
+                                    icono: "checkmark.seal.fill",
+                                    color: .appSuccess,
+                                    seleccionado: tipo == .INCLUIDO
+                                ) { tipo = .INCLUIDO }
+
+                                TipoServicioCard(
+                                    titulo: "No, adicional",
+                                    subtitulo: "Si lo suman, pagan más",
+                                    icono: "plus.circle.fill",
+                                    color: .appPrimary,
+                                    seleccionado: tipo == .ADICIONAL
+                                ) { tipo = .ADICIONAL }
+                            }
+                        }
+
+                        // ─── Sugerencias del tipo elegido ───
+                        if !sugerenciasDelTipo.isEmpty && nombre.isEmpty {
                             Text("Sugerencias").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
-                                    ForEach(vm.sugerencias) { s in
+                                    ForEach(sugerenciasDelTipo) { sug in
                                         Button {
-                                            nombre = s.nombre
-                                            precio = "\(s.precioSugerido)"
-                                            iconoSeleccionado = s.icono
+                                            nombre = sug.nombre
+                                            precio = "\(sug.precioSugerido)"
+                                            iconoSeleccionado = sug.icono
                                         } label: {
                                             HStack(spacing: 5) {
-                                                Image(systemName: s.icono).font(.caption)
-                                                Text(s.nombre).font(.caption)
+                                                Image(systemName: sug.icono).font(.caption)
+                                                Text(sug.nombre).font(.caption)
                                             }
                                             .foregroundColor(.appTextSecondary)
                                             .padding(.horizontal, 12).padding(.vertical, 9)
@@ -232,9 +332,28 @@ struct NuevoServicioView: View {
                             }
                         }
 
-                        FormField(label: "Nombre del servicio", placeholder: "Pelotero inflable", text: $nombre)
-                        FormField(label: "Descripción (opcional)", placeholder: "Incluye armado y desarmado", text: $descripcion)
-                        FormField(label: "Precio (0 = sin cargo)", placeholder: "25000", text: $precio, keyboard: .numberPad)
+                        FormField(label: "Nombre del servicio", placeholder: tipo == .INCLUIDO ? "Pileta" : "Pelotero inflable", text: $nombre)
+                        FormField(label: "Descripción (opcional)", placeholder: "Detalles del servicio", text: $descripcion)
+                        FormField(
+                            label: tipo == .INCLUIDO ? "Descuento si lo quitan" : "Costo adicional",
+                            placeholder: tipo == .INCLUIDO ? "10000" : "25000",
+                            text: $precio,
+                            keyboard: .numberPad
+                        )
+
+                        // ─── Ejemplo en vivo ───
+                        if let p = Int(precio), p > 0 {
+                            HStack(spacing: 8) {
+                                Image(systemName: "info.circle.fill").foregroundColor(tipo.color).font(.caption)
+                                Text(tipo == .INCLUIDO
+                                     ? "El cliente que no quiera \(nombre.isEmpty ? "este servicio" : nombre.lowercased()) paga \(p.formattedPrecio) menos"
+                                     : "El cliente que quiera \(nombre.isEmpty ? "este servicio" : nombre.lowercased()) paga \(p.formattedPrecio) más")
+                                    .font(.caption).foregroundColor(.appTextSecondary)
+                            }
+                            .padding(12)
+                            .background(tipo.color.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
 
                         if let error = vm.error {
                             Text(error).font(.caption).foregroundColor(.appError)
@@ -247,7 +366,8 @@ struct NuevoServicioView: View {
                                     nombre: nombre,
                                     descripcion: descripcion,
                                     precio: Int(precio) ?? 0,
-                                    icono: iconoSeleccionado
+                                    icono: iconoSeleccionado,
+                                    tipo: tipo
                                 )
                                 if ok { onCreado(); dismiss() }
                             }
@@ -278,62 +398,137 @@ struct NuevoServicioView: View {
     }
 }
 
+struct TipoServicioCard: View {
+    let titulo: String
+    let subtitulo: String
+    let icono: String
+    let color: Color
+    let seleccionado: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 6) {
+                Image(systemName: icono).font(.title3)
+                    .foregroundColor(seleccionado ? color : .appTextMuted)
+                Text(titulo).font(.caption).fontWeight(.bold)
+                    .foregroundColor(seleccionado ? .appTextPrimary : .appTextSecondary)
+                Text(subtitulo).font(.caption2).foregroundColor(.appTextMuted)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity).padding(12)
+            .background(seleccionado ? color.opacity(0.12) : Color.appSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(seleccionado ? color : Color.appBorder, lineWidth: seleccionado ? 2 : 1)
+            )
+        }
+    }
+}
+
 // MARK: - Selector de servicios al reservar (cliente)
 
 struct SelectorServiciosView: View {
     let servicios: [ServicioExtra]
     @Binding var seleccionados: Set<String>
 
-    var total: Int {
-        servicios.filter { seleccionados.contains($0.id) }.reduce(0) { $0 + $1.precio }
+    var incluidos: [ServicioExtra] { servicios.filter { $0.tipo == .INCLUIDO } }
+    var adicionales: [ServicioExtra] { servicios.filter { $0.tipo == .ADICIONAL } }
+
+    /// Suma de adicionales elegidos menos incluidos rechazados
+    var ajuste: Int {
+        let suma = adicionales.filter { seleccionados.contains($0.id) }.reduce(0) { $0 + $1.precio }
+        let resta = incluidos.filter { !seleccionados.contains($0.id) }.reduce(0) { $0 + $1.precio }
+        return suma - resta
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Servicios adicionales").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
-                Spacer()
-                if total > 0 {
-                    Text("+\(total.formattedPrecio)").font(.caption).fontWeight(.bold).foregroundColor(.appPrimary)
-                }
-            }
+        VStack(alignment: .leading, spacing: 16) {
 
-            VStack(spacing: 0) {
-                ForEach(servicios) { s in
-                    let activo = seleccionados.contains(s.id)
-                    Button {
-                        if activo { seleccionados.remove(s.id) }
-                        else { seleccionados.insert(s.id) }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: activo ? "checkmark.square.fill" : "square")
-                                .foregroundColor(activo ? .appPrimary : .appTextMuted)
+            // ─── Incluidos (destildar para descontar) ───
+            if !incluidos.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Incluido en el precio")
+                        .font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                    Text("Destildá lo que no necesites y te lo descontamos")
+                        .font(.caption2).foregroundColor(.appTextMuted)
 
-                            Image(systemName: s.icono ?? "star")
-                                .foregroundColor(.appTextSecondary).frame(width: 22)
-
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(s.nombre).font(.subheadline).foregroundColor(.appTextPrimary)
-                                if let d = s.descripcion, !d.isEmpty {
-                                    Text(d).font(.caption2).foregroundColor(.appTextMuted).lineLimit(1)
-                                }
+                    VStack(spacing: 0) {
+                        ForEach(incluidos) { s in
+                            filaServicio(s, activo: seleccionados.contains(s.id), esIncluido: true)
+                            if s.id != incluidos.last?.id {
+                                Divider().background(Color.appBorder).padding(.leading, 48)
                             }
-
-                            Spacer()
-
-                            Text(s.precio == 0 ? "Gratis" : "+\(s.precio.formattedPrecio)")
-                                .font(.caption).fontWeight(.semibold)
-                                .foregroundColor(s.precio == 0 ? .appSuccess : .appPrimary)
                         }
-                        .padding(.horizontal, 14).padding(.vertical, 12)
                     }
-                    if s.id != servicios.last?.id {
-                        Divider().background(Color.appBorder).padding(.leading, 48)
-                    }
+                    .background(Color.appSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
-            .background(Color.appSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            // ─── Adicionales (tildar para sumar) ───
+            if !adicionales.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Servicios adicionales")
+                        .font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+
+                    VStack(spacing: 0) {
+                        ForEach(adicionales) { s in
+                            filaServicio(s, activo: seleccionados.contains(s.id), esIncluido: false)
+                            if s.id != adicionales.last?.id {
+                                Divider().background(Color.appBorder).padding(.leading, 48)
+                            }
+                        }
+                    }
+                    .background(Color.appSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+        .onAppear {
+            // Los incluidos arrancan tildados
+            for s in incluidos { seleccionados.insert(s.id) }
+        }
+    }
+
+    @ViewBuilder
+    func filaServicio(_ s: ServicioExtra, activo: Bool, esIncluido: Bool) -> some View {
+        Button {
+            if activo { seleccionados.remove(s.id) } else { seleccionados.insert(s.id) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: activo ? "checkmark.square.fill" : "square")
+                    .foregroundColor(activo ? (esIncluido ? .appSuccess : .appPrimary) : .appTextMuted)
+
+                Image(systemName: s.icono ?? "star")
+                    .foregroundColor(.appTextSecondary).frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(s.nombre)
+                        .font(.subheadline)
+                        .foregroundColor(activo ? .appTextPrimary : .appTextMuted)
+                        .strikethrough(esIncluido && !activo)
+                    if let d = s.descripcion, !d.isEmpty {
+                        Text(d).font(.caption2).foregroundColor(.appTextMuted).lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                if s.precio == 0 {
+                    Text("Sin cargo").font(.caption).foregroundColor(.appSuccess)
+                } else if esIncluido {
+                    Text(activo ? "Incluido" : "-\(s.precio.formattedPrecio)")
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundColor(activo ? .appTextMuted : .appSuccess)
+                } else {
+                    Text("+\(s.precio.formattedPrecio)")
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundColor(activo ? .appPrimary : .appTextMuted)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
         }
     }
 }
@@ -344,7 +539,8 @@ struct SelectorServiciosView: View {
 final class ServiciosViewModel: ObservableObject {
     @Published var catalogo: [CategoriaAmenidades] = []
     @Published var servicios: [ServicioExtra] = []
-    @Published var sugerencias: [SugerenciaServicio] = []
+    @Published var sugerenciasIncluidos: [SugerenciaServicio] = []
+    @Published var sugerenciasAdicionales: [SugerenciaServicio] = []
     @Published var isLoading = false
     @Published var error: String?
 
@@ -370,10 +566,11 @@ final class ServiciosViewModel: ObservableObject {
     }
 
     func cargarSugerencias() async {
-        struct Resp: Codable { let ok: Bool; let data: [SugerenciaServicio] }
+        struct Resp: Codable { let ok: Bool; let data: SugerenciasResponse }
         guard let data = await request("GET", "/quinchos/catalogo/sugerencias", auth: false),
               let resp = try? JSONDecoder().decode(Resp.self, from: data) else { return }
-        sugerencias = resp.data
+        sugerenciasIncluidos = resp.data.incluidos
+        sugerenciasAdicionales = resp.data.adicionales
     }
 
     func cargarServicios(quinchoId: String, admin: Bool = false) async {
@@ -392,7 +589,7 @@ final class ServiciosViewModel: ObservableObject {
         _ = await request("PUT", "/quinchos/\(quinchoId)/amenidades", body: ["amenidades": amenidades])
     }
 
-    func crearServicio(quinchoId: String, nombre: String, descripcion: String, precio: Int, icono: String) async -> Bool {
+    func crearServicio(quinchoId: String, nombre: String, descripcion: String, precio: Int, icono: String, tipo: TipoServicio = .ADICIONAL) async -> Bool {
         isLoading = true
         error = nil
         defer { isLoading = false }
@@ -401,6 +598,7 @@ final class ServiciosViewModel: ObservableObject {
             "descripcion": descripcion,
             "precio": precio,
             "icono": icono,
+            "tipo": tipo.rawValue,
         ]
         guard let data = await request("POST", "/quinchos/\(quinchoId)/servicios", body: body),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {

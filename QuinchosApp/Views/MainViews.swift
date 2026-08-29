@@ -778,11 +778,19 @@ struct ReservarView: View {
         return f.string(from: horaFinDate)
     }
     
-    private var totalServicios: Int {
-        serviciosDisponibles.filter { serviciosSeleccionados.contains($0.id) }.reduce(0) { $0 + $1.precio }
+    private var sumaAdicionales: Int {
+        serviciosDisponibles
+            .filter { $0.tipo == .ADICIONAL && serviciosSeleccionados.contains($0.id) }
+            .reduce(0) { $0 + $1.precio }
     }
 
-    private var totalFinal: Int { precio + totalServicios }
+    private var descuentoIncluidos: Int {
+        serviciosDisponibles
+            .filter { $0.tipo == .INCLUIDO && !serviciosSeleccionados.contains($0.id) }
+            .reduce(0) { $0 + $1.precio }
+    }
+
+    private var totalFinal: Int { max(0, precio + sumaAdicionales - descuentoIncluidos) }
 
     private var fechaDisplay: String {
         let f = DateFormatter()
@@ -854,8 +862,11 @@ struct ReservarView: View {
                         SummaryRow(label: "Fecha", value: fechaDisplay)
                         SummaryRow(label: "Horario", value: "\(horaInicioString) – \(horaFinString)")
                         SummaryRow(label: "Alquiler", value: precio.formattedPrecio)
-                        if totalServicios > 0 {
-                            SummaryRow(label: "Servicios extra", value: "+\(totalServicios.formattedPrecio)")
+                        if sumaAdicionales > 0 {
+                            SummaryRow(label: "Servicios adicionales", value: "+\(sumaAdicionales.formattedPrecio)")
+                        }
+                        if descuentoIncluidos > 0 {
+                            SummaryRow(label: "Descuento por servicios que no usás", value: "-\(descuentoIncluidos.formattedPrecio)")
                         }
                         Divider().background(Color.appBorder)
                         SummaryRow(label: "Total", value: totalFinal.formattedPrecio, highlight: true)
