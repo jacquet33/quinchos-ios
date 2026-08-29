@@ -169,8 +169,7 @@ struct CrearQuinchoView: View {
     @Environment(\.dismiss) var dismiss
     @State private var nombre = ""
     @State private var descripcion = ""
-    @State private var direccion = ""
-    @State private var ciudad = "Colón"
+    @State private var direccion = DireccionSeleccionada()
     @State private var precioHora = ""
     @State private var precioDia = ""
     @State private var capacidadMin = ""
@@ -187,11 +186,13 @@ struct CrearQuinchoView: View {
             Color.appBackground.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Group {
-                        FormField(label: "Nombre", placeholder: "Quincho Don Asado", text: $nombre)
-                        FormField(label: "Descripción", placeholder: "Describe el espacio...", text: $descripcion, multiline: true)
-                        FormField(label: "Dirección", placeholder: "Ruta 14 Km 5", text: $direccion)
-                        FormField(label: "Ciudad", placeholder: "Colón", text: $ciudad)
+                    FormField(label: "Nombre", placeholder: "Quincho Don Asado", text: $nombre)
+                    FormField(label: "Descripción", placeholder: "Describe el espacio...", text: $descripcion, multiline: true)
+
+                    AddressSearchField(direccion: $direccion)
+
+                    if direccion.esValida {
+                        MiniMapaConfirmacion(latitud: direccion.latitud, longitud: direccion.longitud)
                     }
                     
                     // Tipo
@@ -253,16 +254,21 @@ struct CrearQuinchoView: View {
     }
     
     func crear() async {
-        guard !nombre.isEmpty, !descripcion.isEmpty, !direccion.isEmpty else {
-            error = "Completá todos los campos"
+        guard !nombre.isEmpty, !descripcion.isEmpty else {
+            error = "Completá el nombre y la descripción"
+            return
+        }
+        guard direccion.esValida else {
+            error = "Elegí una dirección de la lista de sugerencias"
             return
         }
         isLoading = true; error = nil
         do {
             let body: [String: Any] = [
-                "nombre": nombre, "descripcion": descripcion, "direccion": direccion,
-                "ciudad": ciudad, "provincia": "Entre Ríos",
-                "latitud": -32.2230, "longitud": -58.1411,
+                "nombre": nombre, "descripcion": descripcion,
+                "direccion": direccion.calle,
+                "ciudad": direccion.ciudad, "provincia": direccion.provincia,
+                "latitud": direccion.latitud, "longitud": direccion.longitud,
                 "precioHora": Int(precioHora) ?? 0, "precioDia": Int(precioDia) ?? 0,
                 "capacidadMin": Int(capacidadMin) ?? 1, "capacidadMax": Int(capacidadMax) ?? 10,
                 "tipo": tipo.rawValue, "horarioApertura": horaApertura, "horarioCierre": horaCierre
@@ -313,6 +319,33 @@ struct EditarQuinchoView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     FormField(label: "Nombre", placeholder: "", text: $nombre)
                     FormField(label: "Descripción", placeholder: "", text: $descripcion, multiline: true)
+
+                    // Dirección
+                    if editandoDireccion {
+                        AddressSearchField(direccion: $direccion)
+                        if direccion.esValida {
+                            MiniMapaConfirmacion(latitud: direccion.latitud, longitud: direccion.longitud)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Dirección").font(.caption).fontWeight(.semibold).foregroundColor(.appTextSecondary)
+                            Button { editandoDireccion = true } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "mappin.and.ellipse").foregroundColor(.appPrimary)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(direccion.calle).foregroundColor(.appTextPrimary).font(.subheadline)
+                                        Text("\(direccion.ciudad), \(direccion.provincia)")
+                                            .font(.caption2).foregroundColor(.appTextMuted)
+                                    }
+                                    Spacer()
+                                    Text("Cambiar").font(.caption).foregroundColor(.appPrimary)
+                                }
+                                .padding(12).background(Color.appSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+                    }
+
                     HStack(spacing: 12) {
                         FormField(label: "Precio/hora", placeholder: "", text: $precioHora, keyboard: .numberPad)
                         FormField(label: "Precio/día", placeholder: "", text: $precioDia, keyboard: .numberPad)
@@ -363,7 +396,14 @@ struct EditarQuinchoView: View {
     }
     
     func guardar() async {
-        let body: [String: Any] = ["nombre": nombre, "descripcion": descripcion, "precioDia": Int(precioDia) ?? 0, "precioHora": Int(precioHora) ?? 0, "disponible": disponible]
+        var body: [String: Any] = ["nombre": nombre, "descripcion": descripcion, "precioDia": Int(precioDia) ?? 0, "precioHora": Int(precioHora) ?? 0, "disponible": disponible]
+        if direccion.esValida {
+            body["direccion"] = direccion.calle
+            body["ciudad"] = direccion.ciudad
+            body["provincia"] = direccion.provincia
+            body["latitud"] = direccion.latitud
+            body["longitud"] = direccion.longitud
+        }
         let data = try? JSONSerialization.data(withJSONObject: body)
         let url = URL(string: "\(APIConfig.baseURL)/quinchos/\(quincho.id)")!
         var req = URLRequest(url: url); req.httpMethod = "PUT"
