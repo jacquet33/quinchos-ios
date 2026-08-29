@@ -335,6 +335,8 @@ struct EditarQuinchoView: View {
     @State private var precioDia: String
     @State private var precioHora: String
     @State private var disponible: Bool
+    @State private var direccion: DireccionSeleccionada
+    @State private var editandoDireccion = false
     @State private var showDelete = false
     @State private var saved = false
     
@@ -345,6 +347,13 @@ struct EditarQuinchoView: View {
         _precioDia = State(initialValue: "\(quincho.precioDia)")
         _precioHora = State(initialValue: "\(quincho.precioHora)")
         _disponible = State(initialValue: quincho.disponible)
+        _direccion = State(initialValue: DireccionSeleccionada(
+            calle: quincho.direccion,
+            ciudad: quincho.ciudad,
+            provincia: quincho.provincia,
+            latitud: quincho.latitud,
+            longitud: quincho.longitud
+        ))
     }
     
     var body: some View {
