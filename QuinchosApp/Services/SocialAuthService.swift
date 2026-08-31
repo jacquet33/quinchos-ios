@@ -7,7 +7,7 @@ import CryptoKit
 
 enum SocialConfig {
     /// Client ID de tipo "iOS" de Google Cloud Console
-    static let googleClientID = "TU_CLIENT_ID.apps.googleusercontent.com"
+    static let googleClientID = "640270129167-k2u215i6t80f29ioo4g1l88339b751k2.apps.googleusercontent.com"
 
     /// Se arma dando vuelta el client ID, es el esquema que registra la app
     static var googleRedirectScheme: String {

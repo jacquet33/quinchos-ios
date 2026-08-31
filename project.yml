@@ -26,6 +26,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.quinchos.app
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: L2V2C22VFC
+        CODE_SIGN_ENTITLEMENTS: QuinchosApp/QuinchosApp.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
@@ -40,7 +41,27 @@ targets:
     info:
       path: QuinchosApp/Info.plist
       properties:
+        CFBundleDisplayName: QuinchosApp
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "2"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - remote-notification
+        NSLocationWhenInUseUsageDescription: "Necesitamos tu ubicación para mostrarte quinchos cercanos"
+        NSCameraUsageDescription: "Para tomar fotos de tu espacio y de tu perfil"
+        NSPhotoLibraryUsageDescription: "Para elegir fotos de tu espacio y de tu perfil"
+        ITSAppUsesNonExemptEncryption: false
         CFBundleURLTypes:
-          - CFBundleURLSchemes:
-              - com.googleusercontent.apps.REEMPLAZAR_CLIENT_ID
-        CODE_SIGN_ENTITLEMENTS: QuinchosApp/QuinchosApp.entitlements
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: google-oauth
+            CFBundleURLSchemes:
+              - com.googleusercontent.apps.640270129167-k2u215i6t80f29ioo4g1l88339b751k2
