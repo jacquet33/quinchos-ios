@@ -27,7 +27,12 @@ workflows:
           cd $CM_BUILD_DIR
           BUILD_NUM=$(($(date +%s) / 60))
           echo "Build number: $BUILD_NUM"
+          # En el proyecto
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $BUILD_NUM/g" QuinchosApp.xcodeproj/project.pbxproj
+          # Y en el Info.plist, que ahora tiene la clave explícita
+          if [ -f QuinchosApp/Info.plist ]; then
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" QuinchosApp/Info.plist || true
+          fi
 
       - name: Fetch signing files
         script: |
