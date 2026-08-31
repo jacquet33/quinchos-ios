@@ -11,6 +11,12 @@ struct Usuario: Codable, Identifiable {
     let rol: Rol
     let verificado: Bool?
     let createdAt: String?
+    let proveedor: String?
+    let tienePassword: Bool?
+
+    /// true si entró con Google o Apple
+    var esCuentaSocial: Bool { (proveedor ?? "EMAIL") != "EMAIL" }
+    var puedeCambiarPassword: Bool { tienePassword ?? true }
 
     enum Rol: String, Codable, CaseIterable {
         case USUARIO, PROPIETARIO, ADMIN

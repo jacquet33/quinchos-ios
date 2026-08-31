@@ -69,6 +69,7 @@ struct QuinchosAppMain: App {
 
 struct LoginView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @StateObject private var social = SocialAuthService()
     @State private var email = ""
     @State private var password = ""
     @State private var isRegistro = false
@@ -154,6 +155,64 @@ struct LoginView: View {
                         }
                         .disabled(authVM.isLoading)
 
+                        // ─── Separador ───
+                        HStack(spacing: 12) {
+                            Rectangle().fill(Color.appBorder).frame(height: 1)
+                            Text("o").font(.caption).foregroundColor(.appTextMuted)
+                            Rectangle().fill(Color.appBorder).frame(height: 1)
+                        }
+                        .padding(.vertical, 4)
+
+                        // ─── Sign in with Apple ───
+                        Button {
+                            Task {
+                                if let respuesta = await social.entrarConApple() {
+                                    await authVM.aplicarLoginSocial(respuesta)
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "apple.logo")
+                                Text("Continuar con Apple").fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity).padding()
+                            .background(Color.white)
+                            .foregroundColor(.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(social.cargando)
+
+                        // ─── Google ───
+                        if SocialConfig.googleConfigurado {
+                            Button {
+                                Task {
+                                    if let respuesta = await social.entrarConGoogle() {
+                                        await authVM.aplicarLoginSocial(respuesta)
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "globe")
+                                    Text("Continuar con Google").fontWeight(.semibold)
+                                }
+                                .frame(maxWidth: .infinity).padding()
+                                .background(Color.appSurface)
+                                .foregroundColor(.appTextPrimary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.appBorder))
+                            }
+                            .disabled(social.cargando)
+                        }
+
+                        if let errorSocial = social.error {
+                            Text(errorSocial).font(.caption).foregroundColor(.appError)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        if social.cargando {
+                            ProgressView().tint(.appPrimary)
+                        }
+
                         Button {
                             withAnimation { isRegistro.toggle() }
                         } label: {
@@ -161,6 +220,12 @@ struct LoginView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.appPrimary)
                         }
+
+                        // Aviso legal
+                        Text("Al continuar aceptás los términos y la política de privacidad")
+                            .font(.caption2).foregroundColor(.appTextMuted)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
                     }
                     .padding(24)
                 }

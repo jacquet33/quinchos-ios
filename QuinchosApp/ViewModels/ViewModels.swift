@@ -57,6 +57,13 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    /// Aplica el resultado de un login con Apple o Google
+    func aplicarLoginSocial(_ respuesta: AuthResponse) async {
+        usuario = respuesta.usuario
+        isAuthenticated = true
+        error = nil
+    }
+
     func logout() async {
         await api.logout()
         isAuthenticated = false

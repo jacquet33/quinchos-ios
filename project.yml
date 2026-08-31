@@ -37,4 +37,10 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Para elegir fotos de tu espacio y de tu perfil"
         INFOPLIST_KEY_UIBackgroundModes: "remote-notification"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: QuinchosApp/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - com.googleusercontent.apps.REEMPLAZAR_CLIENT_ID
         CODE_SIGN_ENTITLEMENTS: QuinchosApp/QuinchosApp.entitlements
