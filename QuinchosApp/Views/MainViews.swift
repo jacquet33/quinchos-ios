@@ -1342,9 +1342,16 @@ struct CuentaView: View {
                             if !esPropietario || modoExplorar {
                                 NavigationLink { FavoritosView() } label: { MenuRowLink(icon: "heart", label: "Mis favoritos") }
                             }
-                            MenuRowLink(icon: "bell", label: "Notificaciones")
+                            NavigationLink { SeguridadCuentaView() } label: {
+                                MenuRowLink(icon: "lock.shield", label: "Seguridad")
+                            }
                             MenuRowLink(icon: "questionmark.circle", label: "Ayuda")
-                            MenuRowLink(icon: "doc.text", label: "Términos y condiciones")
+                            Link(destination: URL(string: "https://quinchos.art3d-studio.com.ar/privacidad")!) {
+                                MenuRowLink(icon: "hand.raised", label: "Política de privacidad")
+                            }
+                            Link(destination: URL(string: "https://quinchos.art3d-studio.com.ar/terminos")!) {
+                                MenuRowLink(icon: "doc.text", label: "Términos y condiciones")
+                            }
                         }
                         .background(Color.appSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
