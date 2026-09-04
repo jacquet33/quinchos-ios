@@ -143,6 +143,31 @@ struct ReservaDetalleView: View {
                         Text(error).font(.caption).foregroundColor(.appError)
                     }
                     
+                    // ─── Invitaciones ───
+                    let estadoActual = vm.estadoActual ?? reserva.estado
+                    if !esPropietario && (estadoActual == .CONFIRMADA || estadoActual == .PENDIENTE) {
+                        NavigationLink {
+                            InvitacionView(reservaId: reserva.id,
+                                           nombreLugar: reserva.quincho?.nombre ?? "")
+                        } label: {
+                            HStack(spacing: 14) {
+                                Text("💌").font(.title3)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Invitar a tus invitados")
+                                        .foregroundColor(.appTextPrimary).fontWeight(.medium)
+                                    Text("Creá la invitación y compartila por WhatsApp")
+                                        .font(.caption2).foregroundColor(.appTextMuted)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption).foregroundColor(.appTextMuted)
+                            }
+                            .padding(14)
+                            .background(Color.appSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
                     // ─── Acciones ───
                     let estado = vm.estadoActual ?? reserva.estado
                     
